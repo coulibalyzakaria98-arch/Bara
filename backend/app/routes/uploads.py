@@ -53,7 +53,7 @@ def upload_cv():
     # Manually verify JWT to work around CORS issues
     try:
         verify_jwt_in_request()
-        user_id = int(get_jwt_identity())  # Convert string to int
+        user_id = safe_int(get_jwt_identity())  # Convert string to int safely
     except Exception as e:
         print(f"[JWT ERROR] {e}")
         return error_response(f"Auth failed: {str(e)}", 401)
@@ -124,7 +124,7 @@ def upload_cv():
             try:
                 # Extraire le texte du CV
                 analyzer = CVAnalyzerService()
-                cv_text = analyzer.extract_text(filepath)
+                cv_text = analyzer._extract_text(filepath)
 
                 # Utiliser l'analyse IA si la clé API est configurée
                 if current_app.config.get('OPENAI_API_KEY'):
@@ -162,7 +162,7 @@ def upload_cv():
 
                 # 🔄 MATCHING AUTOMATIQUE - Rechercher les offres correspondantes
                 try:
-                    current_app.logger.info(f"🔍 Lancement du matching automatique pour {candidate.full_name}")
+                    current_app.logger.info(f"Lancement du matching automatique pour {candidate.user.full_name if candidate.user else 'candidat'}")
                     matches = auto_matcher.find_matches_for_cv(cv_analysis)
                     current_app.logger.info(f"✅ {len(matches)} match(s) trouvé(s) et notifié(s)")
 

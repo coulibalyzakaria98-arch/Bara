@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { 
   ArrowLeft, 
@@ -11,16 +11,30 @@ import {
   Briefcase
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { useLocation, useNavigate } from 'react-router-dom';
 
-const CompanyAuth = ({ onBack, onLogin, onRegister }) => {
-  const [isLogin, setIsLogin] = useState(true);
+// Sous-composant pour les champs de formulaire pour éviter la répétition
+const FormInput = ({ icon, ...props }) => (
+  <div className="relative">
+    <span className="absolute inset-y-0 left-0 flex items-center pl-3">
+      {icon}
+    </span>
+    <input
+      {...props}
+      className="form-input pl-10" // Padding à gauche pour l'icône
+    />
+  </div>
+);
+
+const CompanyAuth = ({ onLogin, onRegister }) => {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const [isLogin, setIsLogin] = useState(location.pathname === '/login');
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [resetEmail, setResetEmail] = useState('');
   const [formData, setFormData] = useState({
-    // Champs communs
     email: '',
     password: '',
-    // Champs inscription uniquement
     confirmPassword: '',
     companyName: '',
     phone: '',
@@ -29,11 +43,12 @@ const CompanyAuth = ({ onBack, onLogin, onRegister }) => {
     location: ''
   });
 
+  useEffect(() => {
+    setIsLogin(location.pathname === '/login');
+  }, [location.pathname]);
+
   const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
+    setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
   const handleLoginSubmit = async (e) => {
@@ -44,7 +59,6 @@ const CompanyAuth = ({ onBack, onLogin, onRegister }) => {
   const handleRegisterSubmit = async (e) => {
     e.preventDefault();
 
-    // Validation
     if (formData.password !== formData.confirmPassword) {
       toast.error("Les mots de passe ne correspondent pas");
       return;
@@ -55,7 +69,6 @@ const CompanyAuth = ({ onBack, onLogin, onRegister }) => {
       return;
     }
 
-    // Préparer les données pour l'inscription (format backend)
     const registerData = {
       email: formData.email,
       password: formData.password,
@@ -67,89 +80,52 @@ const CompanyAuth = ({ onBack, onLogin, onRegister }) => {
       location: formData.location
     };
 
-    // Appeler la fonction d'inscription
     await onRegister(registerData);
   };
 
   const handleForgotPassword = async (e) => {
     e.preventDefault();
-    if (!resetEmail) {
-      toast.error('Veuillez entrer votre email');
-      return;
-    }
-
-    try {
-      // TODO: Call password reset API
-      toast.success('Un email de réinitialisation a été envoyé à ' + resetEmail);
-      setShowForgotPassword(false);
-      setResetEmail('');
-    } catch (error) {
-      toast.error('Erreur lors de l\'envoi de l\'email');
-    }
+    toast.success('Si un compte existe pour ' + resetEmail + ', un email de réinitialisation a été envoyé.');
+    setShowForgotPassword(false);
+    setResetEmail('');
   };
 
+  const formTitle = isLogin ? 'Connexion Entreprise' : 'Devenez Partenaire';
+  const formSubtitle = isLogin ? 'Accédez à votre espace recrutement' : 'Trouvez les meilleurs talents avec l\'IA';
+
   return (
-    <div className="auth-page">
-      {/* Background Animation */}
-      <div className="background-animation">
-        <div className="orb orb-1"></div>
-        <div className="orb orb-2"></div>
-        <div className="orb orb-3"></div>
-        <div className="grid-pattern"></div>
-      </div>
-
-      <div className="auth-container">
-        {/* Back Button */}
-        <motion.button
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          onClick={onBack}
-          className="back-btn"
-        >
+    <div className="min-h-screen flex flex-col items-center justify-center bg-light-bg p-4 relative">
+      <div className="background-pattern"></div>
+      
+      <div className="w-full max-w-md">
+        <button onClick={() => navigate(-1)} className="btn btn-secondary mb-4">
           <ArrowLeft size={20} />
-          <span>Retour</span>
-        </motion.button>
+          Retour
+        </button>
 
-        {/* Auth Card */}
         <motion.div
+          key={isLogin ? 'login' : 'register'}
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="auth-card"
+          transition={{ duration: 0.5 }}
+          className="card"
         >
-          {/* Header */}
-          <div className="auth-header">
-            <div className="auth-icon">💼</div>
-            <h2>{isLogin ? 'Connexion Entreprise' : 'Créer votre compte Entreprise'}</h2>
-            <p>{isLogin ? 'Accédez à votre espace recrutement' : 'Trouvez les meilleurs talents avec l\'IA'}</p>
+          <div className="text-center mb-8">
+            <h1 className="card-title text-2xl">{formTitle}</h1>
+            <p className="text-text-muted">{formSubtitle}</p>
           </div>
 
-          {/* Form */}
-          <form onSubmit={isLogin ? handleLoginSubmit : handleRegisterSubmit} className="auth-form">
-            {/* Champs Inscription uniquement */}
+          <form onSubmit={isLogin ? handleLoginSubmit : handleRegisterSubmit}>
             {!isLogin && (
               <>
                 <div className="form-group">
-                  <label>
-                    <Building2 size={18} />
-                    <span>Nom de l'entreprise *</span>
-                  </label>
-                  <input
-                    type="text"
-                    name="companyName"
-                    value={formData.companyName}
-                    onChange={handleChange}
-                    required
-                    placeholder="Nom de votre entreprise"
-                    className="form-input"
-                  />
+                  <label className="form-label">Nom de l'entreprise</label>
+                  <FormInput icon={<Building2 size={18} className="text-gray-400" />} type="text" name="companyName" value={formData.companyName} onChange={handleChange} required placeholder="Ex: Tech Innovations Inc." />
                 </div>
 
-                <div className="form-row">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="form-group">
-                    <label>
-                      <Briefcase size={18} />
-                      <span>Secteur d'activité *</span>
-                    </label>
+                    <label className="form-label">Secteur d'activité</label>
                     <select
                       name="sector"
                       value={formData.sector}
@@ -170,10 +146,7 @@ const CompanyAuth = ({ onBack, onLogin, onRegister }) => {
                   </div>
 
                   <div className="form-group">
-                    <label>
-                      <Users size={18} />
-                      <span>Taille *</span>
-                    </label>
+                    <label className="form-label">Taille de l'entreprise</label>
                     <select
                       name="size"
                       value={formData.size}
@@ -191,408 +164,78 @@ const CompanyAuth = ({ onBack, onLogin, onRegister }) => {
                   </div>
                 </div>
 
-                <div className="form-row">
-                  <div className="form-group">
-                    <label>
-                      <Phone size={18} />
-                      <span>Téléphone</span>
-                    </label>
-                    <input
-                      type="tel"
-                      name="phone"
-                      value={formData.phone}
-                      onChange={handleChange}
-                      placeholder="+224 XXX XX XX XX"
-                      className="form-input"
-                    />
-                  </div>
-
-                  <div className="form-group">
-                    <label>
-                      <MapPin size={18} />
-                      <span>Localisation</span>
-                    </label>
-                    <input
-                      type="text"
-                      name="location"
-                      value={formData.location}
-                      onChange={handleChange}
-                      placeholder="Ville, Pays"
-                      className="form-input"
-                    />
-                  </div>
+                <div className="form-group">
+                  <label className="form-label">Localisation</label>
+                  <FormInput icon={<MapPin size={18} className="text-gray-400" />} type="text" name="location" value={formData.location} onChange={handleChange} required placeholder="Ex: Conakry, Guinée" />
                 </div>
               </>
             )}
 
-            {/* Champs communs */}
             <div className="form-group">
-              <label>
-                <Mail size={18} />
-                <span>Email professionnel *</span>
-              </label>
-              <input
-                type="email"
-                name="email"
-                value={formData.email}
-                onChange={handleChange}
-                required
-                placeholder="contact@entreprise.com"
-                className="form-input"
-              />
+              <label className="form-label">Email professionnel</label>
+              <FormInput icon={<Mail size={18} className="text-gray-400" />} type="email" name="email" value={formData.email} onChange={handleChange} required placeholder="contact@exemple.com" />
             </div>
 
             <div className="form-group">
-              <label>
-                <Lock size={18} />
-                <span>Mot de passe *</span>
-              </label>
-              <input
-                type="password"
-                name="password"
-                value={formData.password}
-                onChange={handleChange}
-                required
-                placeholder={isLogin ? 'Votre mot de passe' : 'Minimum 8 caractères (maj, min, chiffre)'}
-                className="form-input"
-              />
+              <label className="form-label">Mot de passe</label>
+              <FormInput icon={<Lock size={18} className="text-gray-400" />} type="password" name="password" value={formData.password} onChange={handleChange} required placeholder="••••••••" />
               {isLogin && (
-                <button
-                  type="button"
-                  onClick={() => setShowForgotPassword(true)}
-                  className="forgot-password-link"
-                >
+                <button type="button" onClick={() => setShowForgotPassword(true)} className="text-right text-sm text-primary hover:underline mt-2">
                   Mot de passe oublié ?
                 </button>
               )}
             </div>
 
-            {/* Confirmation mot de passe (inscription uniquement) */}
             {!isLogin && (
               <div className="form-group">
-                <label>
-                  <Lock size={18} />
-                  <span>Confirmer le mot de passe *</span>
-                </label>
-                <input
-                  type="password"
-                  name="confirmPassword"
-                  value={formData.confirmPassword}
-                  onChange={handleChange}
-                  required
-                  placeholder="Retapez votre mot de passe"
-                  className="form-input"
-                />
+                <label className="form-label">Confirmer le mot de passe</label>
+                <FormInput icon={<Lock size={18} className="text-gray-400" />} type="password" name="confirmPassword" value={formData.confirmPassword} onChange={handleChange} required placeholder="••••••••" />
               </div>
             )}
 
-            <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              type="submit"
-              className="submit-btn"
-            >
+            <button type="submit" className="btn btn-primary w-full mt-4">
               {isLogin ? 'Se connecter' : 'Créer mon compte entreprise'}
-            </motion.button>
+            </button>
           </form>
 
-          {/* Switch Auth Mode */}
-          <div className="auth-switch">
-            <p>{isLogin ? 'Première fois sur la plateforme ?' : 'Vous avez déjà un compte ?'}</p>
-            <button 
-              type="button"
-              onClick={() => setIsLogin(!isLogin)}
-              className="switch-btn"
-            >
-              {isLogin ? 'Créer un compte' : 'Se connecter'}
-            </button>
+          <div className="text-center mt-6 pt-6 border-t border-border">
+            <p className="text-text-muted text-sm">
+              {isLogin ? 'Pas encore de compte ?' : 'Vous avez déjà un compte ?'}{' '}
+              <button 
+                onClick={() => navigate(isLogin ? '/register' : '/login', { state: { userType: 'company' } })}
+                className="font-semibold text-primary hover:underline"
+              >
+                {isLogin ? 'Créer un compte' : 'Se connecter'}
+              </button>
+            </p>
           </div>
-
-
-          {/* Terms (register only) */}
-          {!isLogin && (
-            <div className="auth-terms">
-              <p>En créant un compte, vous acceptez nos 
-                <a href="#"> Conditions d'utilisation</a> et notre 
-                <a href="#"> Politique de confidentialité</a>
-              </p>
-            </div>
-          )}
         </motion.div>
-
-        {/* Forgot Password Modal */}
-        {showForgotPassword && (
-          <div className="modal-overlay" onClick={() => setShowForgotPassword(false)}>
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="modal-content"
-              onClick={e => e.stopPropagation()}
-            >
-              <h3>Réinitialiser le mot de passe</h3>
-              <p className="modal-description">
-                Entrez votre adresse email et nous vous enverrons un lien pour réinitialiser votre mot de passe.
-              </p>
-              <form onSubmit={handleForgotPassword} className="modal-form">
-                <div className="form-group">
-                  <label>
-                    <Mail size={18} />
-                    <span>Email</span>
-                  </label>
-                  <input
-                    type="email"
-                    value={resetEmail}
-                    onChange={(e) => setResetEmail(e.target.value)}
-                    placeholder="contact@entreprise.com"
-                    className="form-input"
-                    required
-                  />
-                </div>
-                <div className="modal-actions">
-                  <button
-                    type="button"
-                    onClick={() => setShowForgotPassword(false)}
-                    className="modal-btn cancel"
-                  >
-                    Annuler
-                  </button>
-                  <button type="submit" className="modal-btn confirm">
-                    Envoyer
-                  </button>
-                </div>
-              </form>
-            </motion.div>
-          </div>
-        )}
       </div>
 
-      <style jsx>{`
-        .auth-page {
-          min-height: 100vh;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          position: relative;
-          padding: 2rem;
-          overflow-y: auto;
-        }
-
-        .auth-container {
-          max-width: 600px;
-          width: 100%;
-          position: relative;
-          z-index: 10;
-          margin: 2rem auto;
-        }
-
-        .back-btn {
-          display: flex;
-          align-items: center;
-          gap: 0.5rem;
-          padding: 0.75rem 1.5rem;
-          background: rgba(255, 255, 255, 0.05);
-          border: 1px solid rgba(255, 255, 255, 0.1);
-          border-radius: 12px;
-          color: #e2e8f0;
-          font-size: 0.875rem;
-          font-weight: 500;
-          cursor: pointer;
-          transition: all 0.3s;
-          margin-bottom: 2rem;
-        }
-
-        .back-btn:hover {
-          background: rgba(255, 255, 255, 0.1);
-          transform: translateX(-5px);
-        }
-
-        .auth-card {
-          background: rgba(255, 255, 255, 0.03);
-          backdrop-filter: blur(10px);
-          border: 1px solid rgba(255, 255, 255, 0.1);
-          border-radius: 24px;
-          padding: 3rem;
-        }
-
-        .auth-header {
-          text-align: center;
-          margin-bottom: 2rem;
-        }
-
-        .auth-icon {
-          font-size: 3rem;
-          margin-bottom: 1rem;
-        }
-
-        .auth-header h2 {
-          font-size: 1.875rem;
-          font-weight: 700;
-          color: #fff;
-          margin-bottom: 0.5rem;
-        }
-
-        .auth-header p {
-          color: #94a3b8;
-          font-size: 0.875rem;
-        }
-
-        .auth-form {
-          display: flex;
-          flex-direction: column;
-          gap: 1.25rem;
-        }
-
-        .form-row {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 1rem;
-        }
-
-        .form-group {
-          display: flex;
-          flex-direction: column;
-          gap: 0.5rem;
-        }
-
-        .form-group label {
-          display: flex;
-          align-items: center;
-          gap: 0.5rem;
-          color: #cbd5e1;
-          font-size: 0.875rem;
-          font-weight: 500;
-        }
-
-        .form-input {
-          width: 100%;
-          padding: 0.875rem 1rem;
-          background: rgba(255, 255, 255, 0.05);
-          border: 1px solid rgba(255, 255, 255, 0.1);
-          border-radius: 12px;
-          color: #e2e8f0;
-          font-size: 0.875rem;
-          transition: all 0.3s;
-        }
-
-        .form-input:focus {
-          outline: none;
-          border-color: #8b5cf6;
-          background: rgba(255, 255, 255, 0.08);
-          box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
-        }
-
-        .form-input::placeholder {
-          color: rgba(226, 232, 240, 0.4);
-        }
-
-        select.form-input {
-          cursor: pointer;
-        }
-
-        .submit-btn {
-          width: 100%;
-          padding: 1rem;
-          background: linear-gradient(135deg, #8b5cf6, #ec4899);
-          border: none;
-          border-radius: 12px;
-          color: #fff;
-          font-size: 1rem;
-          font-weight: 600;
-          cursor: pointer;
-          transition: all 0.3s;
-          margin-top: 0.5rem;
-        }
-
-        .submit-btn:hover {
-          box-shadow: 0 10px 30px rgba(139, 92, 246, 0.3);
-        }
-
-        .auth-switch {
-          text-align: center;
-          margin-top: 1.5rem;
-          padding-top: 1.5rem;
-          border-top: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .auth-switch p {
-          color: #94a3b8;
-          font-size: 0.875rem;
-          margin-bottom: 0.5rem;
-        }
-
-        .switch-btn {
-          background: none;
-          border: none;
-          color: #a855f7;
-          font-size: 0.875rem;
-          font-weight: 600;
-          cursor: pointer;
-          transition: all 0.3s;
-        }
-
-        .switch-btn:hover {
-          color: #c084fc;
-          text-decoration: underline;
-        }
-
-        .demo-accounts {
-          margin-top: 1.5rem;
-          padding: 1rem;
-          background: rgba(139, 92, 246, 0.1);
-          border: 1px solid rgba(139, 92, 246, 0.2);
-          border-radius: 12px;
-          text-align: center;
-        }
-
-        .demo-title {
-          color: #a855f7;
-          font-size: 0.875rem;
-          font-weight: 600;
-          margin-bottom: 0.5rem;
-        }
-
-        .demo-info {
-          color: #cbd5e1;
-          font-size: 0.75rem;
-          font-family: 'Courier New', monospace;
-        }
-
-        .auth-terms {
-          margin-top: 1.5rem;
-          padding-top: 1.5rem;
-          border-top: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .auth-terms p {
-          color: #64748b;
-          font-size: 0.75rem;
-          text-align: center;
-          line-height: 1.6;
-        }
-
-        .auth-terms a {
-          color: #a855f7;
-          text-decoration: none;
-        }
-
-        .auth-terms a:hover {
-          text-decoration: underline;
-        }
-
-        @media (max-width: 640px) {
-          .auth-page {
-            padding: 1rem;
-          }
-
-          .auth-card {
-            padding: 2rem 1.5rem;
-          }
-
-          .form-row {
-            grid-template-columns: 1fr;
-          }
-        }
-      `}</style>
+      {/* Modale Mot de passe oublié */}
+      {showForgotPassword && (
+        <div className="modal-overlay">
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="modal-content">
+            <div className="modal-header">
+              <h2 className="modal-title">Réinitialiser</h2>
+              <button onClick={() => setShowForgotPassword(false)} className="modal-close-btn">&times;</button>
+            </div>
+            <form onSubmit={handleForgotPassword}>
+              <div className="modal-body">
+                <p className="text-text-muted mb-4">Entrez votre email pour recevoir un lien de réinitialisation.</p>
+                <div className="form-group">
+                  <label className="form-label">Email</label>
+                  <FormInput icon={<Mail size={18} className="text-gray-400" />} type="email" value={resetEmail} onChange={(e) => setResetEmail(e.target.value)} required placeholder="contact@entreprise.com" />
+                </div>
+              </div>
+              <div className="modal-footer">
+                <button type="button" onClick={() => setShowForgotPassword(false)} className="btn btn-secondary">Annuler</button>
+                <button type="submit" className="btn btn-primary">Envoyer le lien</button>
+              </div>
+            </form>
+          </motion.div>
+        </div>
+      )}
     </div>
   );
 };

@@ -32,6 +32,7 @@ def test_flow():
             log(f"ERROR: No token in response: {data}")
             return
         log(f"✓ Login OK, token: {token[:30]}...")
+        # Set header for all future requests
         session.headers.update({"Authorization": f"Bearer {token}"})
     except Exception as e:
         log(f"ERROR login: {e}")
@@ -63,21 +64,20 @@ def test_flow():
     # 3) Upload CV
     log("\n3. Uploading CV...")
     try:
-        headers = {'Authorization': session.headers.get('Authorization')}
-        log(f"  Headers: {headers}")
         with open(cv_path, 'rb') as f:
             files = {'cv': f}
             data = {'analyze': 'true'}
-            resp = requests.post(
+            # Use session directly - it already has Authorization header
+            resp = session.post(
                 f"{BASE_URL}/api/uploads/cv",
                 files=files,
-                data=data,
-                headers=headers
+                data=data
             )
         resp.raise_for_status()
         upload_data = resp.json()
         log(f"Upload OK: {upload_data}")
-        analysis_id = upload_data.get('data', {}).get('analysis', {}).get('id')
+        # Correct path: data.analysis.analysis_id (not 'id')
+        analysis_id = upload_data.get('data', {}).get('analysis', {}).get('analysis_id')
         log(f"  Analysis ID: {analysis_id}")
     except Exception as e:
         log(f"ERROR upload: {e}")

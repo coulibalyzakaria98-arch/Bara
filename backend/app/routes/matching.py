@@ -8,7 +8,7 @@ from flask import Blueprint, request
 from flask_jwt_extended import jwt_required, get_jwt_identity
 
 from app.models import User, Candidate, Job
-from app.utils.helpers import success_response, error_response
+from app.utils.helpers import success_response, error_response, safe_int
 from app.services.matching_service import matching_service
 
 matching_bp = Blueprint('matching', __name__)
@@ -24,7 +24,7 @@ def get_matched_jobs():
     - limit: Nombre max de résultats (default: 20)
     - min_score: Score minimum (default: 50)
     """
-    user_id = get_jwt_identity()
+    user_id = safe_int(get_jwt_identity())
     user = User.query.get(user_id)
 
     if not user or user.role != 'candidate':
@@ -62,7 +62,7 @@ def get_matched_candidates():
     - limit: Nombre max de résultats (default: 20)
     - min_score: Score minimum (default: 50)
     """
-    user_id = get_jwt_identity()
+    user_id = safe_int(get_jwt_identity())
     user = User.query.get(user_id)
 
     if not user or user.role != 'company':
@@ -130,7 +130,7 @@ def calculate_match():
     Body:
     - job_id: ID de l'offre
     """
-    user_id = get_jwt_identity()
+    user_id = safe_int(get_jwt_identity())
     user = User.query.get(user_id)
 
     if not user or user.role != 'candidate':

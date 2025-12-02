@@ -1,3 +1,5 @@
+const colors = require('tailwindcss/colors');
+
 /** @type {import('tailwindcss').Config} */
 export default {
   content: [
@@ -7,41 +9,63 @@ export default {
   theme: {
     extend: {
       colors: {
+        // Ajout des couleurs par défaut pour plus de flexibilité
+        blue: colors.blue,
+        green: colors.green,
+        purple: colors.purple,
+        yellow: colors.yellow,
+
+        // Modern Blue Palette (Primary)
         primary: {
-          50: '#ecfeff',
-          100: '#cffafe',
-          200: '#a5f3fc',
-          300: '#67e8f9',
-          400: '#22d3ee',
-          500: '#06b6d4',
-          600: '#0891b2',
-          700: '#0e7490',
-          800: '#155e75',
-          900: '#164e63',
+          50: '#f0f7ff',
+          100: '#e0efff',
+          200: '#bae0ff',
+          300: '#7ac8ff',
+          400: '#36b3ff',
+          500: '#0090ff',
+          600: '#0070d8',
+          700: '#0055b8',
+          800: '#003d8a',
+          900: '#002b5c',
         },
+        // Accent Blue (Secondary)
         secondary: {
-          50: '#faf5ff',
-          100: '#f3e8ff',
-          200: '#e9d5ff',
-          300: '#d8b4fe',
-          400: '#c084fc',
-          500: '#a855f7',
-          600: '#9333ea',
-          700: '#7e22ce',
-          800: '#6b21a8',
-          900: '#581c87',
+          50: '#e6f3ff',
+          100: '#cce6ff',
+          200: '#99cdff',
+          300: '#66b3ff',
+          400: '#3399ff',
+          500: '#0066ff',
+          600: '#0052cc',
+          700: '#003d99',
+          800: '#002966',
+          900: '#001a33',
         },
+        // Sky Blue (Tertiary)
         accent: {
-          50: '#fdf4ff',
-          100: '#fae8ff',
-          200: '#f5d0fe',
-          300: '#f0abfc',
-          400: '#e879f9',
-          500: '#d946ef',
-          600: '#c026d3',
-          700: '#a21caf',
-          800: '#86198f',
-          900: '#701a75',
+          50: '#f5f9fc',
+          100: '#e8f2f8',
+          200: '#d1e5f0',
+          300: '#aad4e6',
+          400: '#7dbdd6',
+          500: '#4fa3c2',
+          600: '#3484a8',
+          700: '#25658e',
+          800: '#1a4a6f',
+          900: '#0d2e47',
+        },
+        // Neutral Palette
+        slate: {
+          50: '#f9fafb',
+          100: '#f3f4f6',
+          200: '#e5e7eb',
+          300: '#d1d5db',
+          400: '#9ca3af',
+          500: '#6b7280',
+          600: '#4b5563',
+          700: '#374151',
+          800: '#1f2937',
+          900: '#111827',
         }
       },
       fontFamily: {

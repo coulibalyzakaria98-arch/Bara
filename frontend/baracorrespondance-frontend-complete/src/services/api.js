@@ -18,6 +18,15 @@ api.interceptors.request.use(
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+    
+    // For FormData, don't set Content-Type header - let browser handle multipart/form-data
+    if (!(config.data instanceof FormData)) {
+      config.headers['Content-Type'] = 'application/json';
+    } else {
+      // Remove Content-Type for FormData so browser sets it with boundary
+      delete config.headers['Content-Type'];
+    }
+    
     console.log('🔑 API Request:', config.url, {
       hasToken: !!token,
       authHeader: config.headers.Authorization ? config.headers.Authorization.substring(0, 50) + '...' : 'AUCUN'
@@ -226,6 +235,32 @@ export const jobsAPI = {
     return response.data;
   },
 
+  getCompanyJobs: async () => {
+    const response = await api.get('/jobs/company');
+    return response.data;
+  },
+
+  createJob: async (jobData) => {
+    const response = await api.post('/jobs', jobData);
+    return response.data;
+  },
+
+  updateJob: async (jobId, jobData) => {
+    const response = await api.put(`/jobs/${jobId}`, jobData);
+    return response.data;
+  },
+
+  deleteJob: async (jobId) => {
+    const response = await api.delete(`/jobs/${jobId}`);
+    return response.data;
+  },
+
+  toggleStatus: async (jobId) => {
+    const response = await api.post(`/jobs/${jobId}/toggle-status`);
+    return response.data;
+  },
+
+  // Legacy aliases
   create: async (jobData) => {
     const response = await api.post('/jobs', jobData);
     return response.data;
@@ -346,6 +381,44 @@ export const messagesAPI = {
   }
 };
 
+// Applications API
+export const applicationsAPI = {
+  getMyApplications: async (filters = {}) => {
+    const response = await api.get('/applications/my-applications', { params: filters });
+    return response.data;
+  },
+
+  getApplication: async (applicationId) => {
+    const response = await api.get(`/applications/${applicationId}`);
+    return response.data;
+  },
+
+  applyToJob: async (jobId, coverLetter = null) => {
+    const response = await api.post(`/jobs/${jobId}/apply`, {
+      cover_letter: coverLetter
+    });
+    return response.data;
+  },
+
+  updateStatus: async (applicationId, status, notes = null) => {
+    const response = await api.put(`/applications/${applicationId}/status`, {
+      status,
+      notes
+    });
+    return response.data;
+  },
+
+  withdraw: async (applicationId) => {
+    const response = await api.delete(`/applications/${applicationId}`);
+    return response.data;
+  },
+
+  getStats: async () => {
+    const response = await api.get('/applications/stats');
+    return response.data;
+  }
+};
+
 // Posters API
 export const postersAPI = {
   generate: async (posterData) => {
@@ -384,6 +457,227 @@ export const postersAPI = {
 
   getViewUrl: (posterId) => {
     return `${API_BASE_URL}/posters/${posterId}/view`;
+  }
+};
+
+// Analytics API
+export const analyticsAPI = {
+  getCandidateStats: async () => {
+    const response = await api.get('/analytics/candidate/stats');
+    return response.data;
+  },
+
+  getCompanyStats: async () => {
+    const response = await api.get('/analytics/company/stats');
+    return response.data;
+  },
+
+  getCandidateActivity: async () => {
+    const response = await api.get('/analytics/candidate/activity');
+    return response.data;
+  },
+
+  getCompanyActivity: async () => {
+    const response = await api.get('/analytics/company/activity');
+    return response.data;
+  },
+
+  exportPDF: async () => {
+    const response = await api.get('/analytics/export/pdf', {
+      responseType: 'blob'
+    });
+    return response;
+  }
+};
+
+// Favorites API
+export const favoritesAPI = {
+  // Get all favorites
+  getAll: async (type = null) => {
+    const params = type ? { type } : {};
+    const response = await api.get('/favorites', { params });
+    return response.data;
+  },
+
+  // Add job to favorites (candidates)
+  addJob: async (jobId, notes = null) => {
+    const response = await api.post(`/favorites/job/${jobId}`, { notes });
+    return response.data;
+  },
+
+  // Add candidate to favorites (companies)
+  addCandidate: async (candidateId, notes = null) => {
+    const response = await api.post(`/favorites/candidate/${candidateId}`, { notes });
+    return response.data;
+  },
+
+  // Remove job from favorites
+  removeJob: async (jobId) => {
+    const response = await api.delete(`/favorites/job/${jobId}`);
+    return response.data;
+  },
+
+  // Remove candidate from favorites
+  removeCandidate: async (candidateId) => {
+    const response = await api.delete(`/favorites/candidate/${candidateId}`);
+    return response.data;
+  },
+
+  // Update favorite notes
+  updateNotes: async (favoriteId, notes) => {
+    const response = await api.put(`/favorites/${favoriteId}/notes`, { notes });
+    return response.data;
+  },
+
+  // Check if job is favorited
+  isJobFavorited: async (jobId) => {
+    const response = await api.get(`/favorites/check/job/${jobId}`);
+    return response.data;
+  },
+
+  // Check if candidate is favorited
+  isCandidateFavorited: async (candidateId) => {
+    const response = await api.get(`/favorites/check/candidate/${candidateId}`);
+    return response.data;
+  },
+
+  // Get favorites stats
+  getStats: async () => {
+    const response = await api.get('/favorites/stats');
+    return response.data;
+  }
+};
+
+// Reviews API
+export const reviewsAPI = {
+  // Create a review
+  create: async (reviewData) => {
+    const response = await api.post('/reviews', reviewData);
+    return response.data;
+  },
+
+  // Update a review
+  update: async (reviewId, reviewData) => {
+    const response = await api.put(`/reviews/${reviewId}`, reviewData);
+    return response.data;
+  },
+
+  // Delete a review
+  delete: async (reviewId) => {
+    const response = await api.delete(`/reviews/${reviewId}`);
+    return response.data;
+  },
+
+  // Get candidate reviews
+  getCandidateReviews: async (candidateId, page = 1, perPage = 10) => {
+    const response = await api.get(`/reviews/candidate/${candidateId}`, {
+      params: { page, per_page: perPage }
+    });
+    return response.data;
+  },
+
+  // Get company reviews
+  getCompanyReviews: async (companyId, page = 1, perPage = 10) => {
+    const response = await api.get(`/reviews/company/${companyId}`, {
+      params: { page, per_page: perPage }
+    });
+    return response.data;
+  },
+
+  // Get review stats
+  getStats: async (entityType, entityId) => {
+    const response = await api.get(`/reviews/stats/${entityType}/${entityId}`);
+    return response.data;
+  },
+
+  // Mark review as helpful
+  markHelpful: async (reviewId) => {
+    const response = await api.post(`/reviews/${reviewId}/helpful`);
+    return response.data;
+  },
+
+  // Get my reviews (reviews I gave)
+  getMyReviews: async () => {
+    const response = await api.get('/reviews/my-reviews');
+    return response.data;
+  },
+
+  // Get reviews about me
+  getReviewsAboutMe: async () => {
+    const response = await api.get('/reviews/about-me');
+    return response.data;
+  }
+};
+
+// Skill Tests API
+export const skillTestsAPI = {
+  // Get all tests
+  getAll: async (params = {}) => {
+    const response = await api.get('/skill-tests', { params });
+    return response.data;
+  },
+
+  // Get test details
+  getTest: async (testId) => {
+    const response = await api.get(`/skill-tests/${testId}`);
+    return response.data;
+  },
+
+  // Start a test
+  startTest: async (testId) => {
+    const response = await api.post(`/skill-tests/${testId}/start`);
+    return response.data;
+  },
+
+  // Submit test answers
+  submitTest: async (testId, answers, startedAt) => {
+    const response = await api.post(`/skill-tests/${testId}/submit`, {
+      answers,
+      started_at: startedAt
+    });
+    return response.data;
+  },
+
+  // Get my results
+  getMyResults: async () => {
+    const response = await api.get('/skill-tests/results');
+    return response.data;
+  },
+
+  // Get result details
+  getResult: async (resultId) => {
+    const response = await api.get(`/skill-tests/results/${resultId}`);
+    return response.data;
+  },
+
+  // Get candidate results (for companies)
+  getCandidateResults: async (candidateId) => {
+    const response = await api.get(`/skill-tests/candidate/${candidateId}/results`);
+    return response.data;
+  },
+
+  // Get categories
+  getCategories: async () => {
+    const response = await api.get('/skill-tests/categories');
+    return response.data;
+  },
+
+  // Admin: Create test
+  createTest: async (testData) => {
+    const response = await api.post('/skill-tests/admin', testData);
+    return response.data;
+  },
+
+  // Admin: Update test
+  updateTest: async (testId, testData) => {
+    const response = await api.put(`/skill-tests/admin/${testId}`, testData);
+    return response.data;
+  },
+
+  // Admin: Delete test
+  deleteTest: async (testId) => {
+    const response = await api.delete(`/skill-tests/admin/${testId}`);
+    return response.data;
   }
 };
 

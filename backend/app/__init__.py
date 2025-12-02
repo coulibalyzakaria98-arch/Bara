@@ -13,12 +13,14 @@ from flask_cors import CORS
 from flask_marshmallow import Marshmallow
 
 from app.config import config
+from flask_mail import Mail
 
 # Extensions
 db = SQLAlchemy()
 migrate = Migrate()
 jwt = JWTManager()
 ma = Marshmallow()
+mail = Mail()
 
 
 def create_app(config_name=None):
@@ -47,6 +49,7 @@ def create_app(config_name=None):
     migrate.init_app(app, db)
     jwt.init_app(app)
     ma.init_app(app)
+    mail.init_app(app)
     
     # Enregistrer les blueprints (routes)
     register_blueprints(app)
@@ -101,6 +104,12 @@ def register_blueprints(app):
     from app.routes.posters import posters_bp
     from app.routes.matches import matches_bp
     from app.routes.messages import messages_bp
+    from app.routes.applications import applications_bp
+    from app.routes.analytics import analytics_bp
+    from app.routes.favorites import favorites_bp
+    from app.routes.reviews import reviews_bp
+    from app.routes.skill_tests import skill_tests_bp
+    from app.routes.cv_generator import cv_generator_bp
 
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
     app.register_blueprint(candidates_bp, url_prefix='/api/candidates')
@@ -113,6 +122,12 @@ def register_blueprints(app):
     app.register_blueprint(posters_bp, url_prefix='/api/posters')
     app.register_blueprint(matches_bp, url_prefix='/api/matches')
     app.register_blueprint(messages_bp, url_prefix='/api/messages')
+    app.register_blueprint(applications_bp, url_prefix='/api/applications')
+    app.register_blueprint(analytics_bp, url_prefix='/api/analytics')
+    app.register_blueprint(favorites_bp, url_prefix='/api/favorites')
+    app.register_blueprint(reviews_bp, url_prefix='/api/reviews')
+    app.register_blueprint(skill_tests_bp, url_prefix='/api/skill-tests')
+    app.register_blueprint(cv_generator_bp, url_prefix='/api/cv-generator')
 
 
 def register_error_handlers(app):

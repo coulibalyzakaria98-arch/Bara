@@ -31,7 +31,7 @@ class AIAnalyzerService:
                 # Ne pas afficher la clé en clair dans les logs
                 current_app.logger.warning('OPENAI_API_KEY semble invalide. Veuillez vérifier la clé.')
 
-            # Initialiser le client sans exposer la clé dans les logs
+            # Initialiser le client sans exposer la clé dans les logs (OpenAI v1+ compatible)
             self.client = OpenAI(api_key=api_key)
         return self.client
 

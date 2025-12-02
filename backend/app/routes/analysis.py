@@ -9,7 +9,7 @@ from flask_jwt_extended import jwt_required, get_jwt_identity
 
 from app import db
 from app.models import User, Candidate, CVAnalysis
-from app.utils.helpers import success_response, error_response
+from app.utils.helpers import success_response, error_response, safe_int
 from app.services.cv_analyzer import CVAnalyzerService
 
 analysis_bp = Blueprint('analysis', __name__)
@@ -21,7 +21,7 @@ analysis_bp = Blueprint('analysis', __name__)
 
 def get_current_candidate():
     """Obtenir le profil candidat de l'utilisateur connecté"""
-    user_id = get_jwt_identity()
+    user_id = safe_int(get_jwt_identity())
     user = User.query.get(user_id)
     
     if not user or user.role != 'candidate':
@@ -192,7 +192,6 @@ def reanalyze_cv():
     if not candidate.cv_url:
         return error_response("Aucun CV uploadé. Veuillez d'abord uploader votre CV.", 400)
     
-    # Vérifier la limite d'analyses (pour utilisateurs gratuits)
     from datetime import datetime
     current_month = datetime.utcnow().strftime('%Y-%m')
     
@@ -204,8 +203,13 @@ def reanalyze_cv():
     from flask import current_app
     limit = current_app.config.get('CV_ANALYSIS_LIMIT_FREE', 3)
     
-    # TODO: Vérifier si l'utilisateur a un abonnement premium
-    if monthly_analyses >= limit:
+    # NOTE: Premium subscription check not yet implemented
+    # Currently all users have the free tier limit
+    # TODO: Implement premium subscription model in User table (is_premium field)
+    # TODO: Check User.is_premium before enforcing limit
+    is_premium = getattr(candidate.user, 'is_premium', False) if candidate.user else False
+    
+    if not is_premium and monthly_analyses >= limit:
         return error_response(
             f"Limite d'analyses atteinte ({limit}/mois). Passez à Premium pour des analyses illimitées.",
             429

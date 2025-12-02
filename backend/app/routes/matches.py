@@ -5,13 +5,15 @@ Routes Matches - BaraCorrespondance AI
 Gestion des correspondances automatiques CV-Emploi
 """
 
-from flask import Blueprint, request, current_app
+from flask import Blueprint, request, current_app, send_file
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from datetime import datetime
+import io as io_module
 
 from app import db
 from app.models import User, Candidate, Company, Match, CVAnalysis
-from app.utils.helpers import success_response, error_response
+from app.utils.helpers import success_response, error_response, safe_int
+from app.services.pdf_generator import pdf_generator
 
 matches_bp = Blueprint('matches', __name__)
 
@@ -27,7 +29,7 @@ def get_matches():
     - min_score: Score minimum (default: 0)
     - limit: Nombre max (default: 20)
     """
-    user_id = get_jwt_identity()
+    user_id = safe_int(get_jwt_identity())
     user = User.query.get(user_id)
 
     if not user:
@@ -91,7 +93,7 @@ def get_matches():
 @jwt_required()
 def get_match(match_id):
     """Récupérer les détails d'un match"""
-    user_id = get_jwt_identity()
+    user_id = safe_int(get_jwt_identity())
     user = User.query.get(user_id)
 
     if not user:
@@ -143,7 +145,7 @@ def set_match_action(match_id):
         "notes": "Notes optionnelles"
     }
     """
-    user_id = get_jwt_identity()
+    user_id = safe_int(get_jwt_identity())
     user = User.query.get(user_id)
     data = request.get_json()
 
@@ -194,7 +196,7 @@ def set_match_action(match_id):
 @jwt_required()
 def toggle_favorite(match_id):
     """Marquer/démarquer un match comme favori"""
-    user_id = get_jwt_identity()
+    user_id = safe_int(get_jwt_identity())
     user = User.query.get(user_id)
     data = request.get_json() or {}
 
@@ -297,5 +299,70 @@ def get_match_stats():
             'new_matches': new_matches,
             'mutual_interest': mutual_interest
         })
+
+
+@matches_bp.route('/<int:match_id>/download-pdf', methods=['GET'])
+@jwt_required()
+def download_match_pdf(match_id):
+    """
+    Télécharger le rapport PDF d'un match
+
+    Permissions:
+    - Candidat ou entreprise du match uniquement
+    """
+    user_id = get_jwt_identity()
+    user = User.query.get(user_id)
+
+    if not user:
+        return error_response("Utilisateur non trouvé", 404)
+
+    # Récupérer le match avec toutes les relations
+    match = Match.query.get(match_id)
+    if not match:
+        return error_response("Match non trouvé", 404)
+
+    # Vérifier les permissions
+    has_access = False
+
+    if user.role == 'candidate':
+        candidate = Candidate.query.filter_by(user_id=user_id).first()
+        if candidate and match.candidate_id == candidate.id:
+            has_access = True
+
+    elif user.role == 'company':
+        company = Company.query.filter_by(user_id=user_id).first()
+        if company and match.job.company_id == company.id:
+            has_access = True
+
+    if not has_access:
+        return error_response("Accès non autorisé", 403)
+
+    try:
+        # Préparer les données du match
+        match_data = match.to_dict(include_candidate=True, include_job=True)
+
+        # Générer le PDF
+        pdf_content = pdf_generator.generate_match_report(match_data, user.role)
+
+        # Nom du fichier
+        entity_name = ""
+        if user.role == 'candidate':
+            entity_name = match.job.title.replace(' ', '_') if match.job.title else 'job'
+        else:
+            entity_name = match.candidate.full_name.replace(' ', '_') if match.candidate.full_name else 'candidat'
+
+        filename = f"match_rapport_{entity_name}_{datetime.now().strftime('%Y%m%d')}.pdf"
+
+        # Retourner le PDF
+        return send_file(
+            io_module.BytesIO(pdf_content),
+            mimetype='application/pdf',
+            as_attachment=True,
+            download_name=filename
+        )
+
+    except Exception as e:
+        current_app.logger.error(f"Erreur génération PDF match: {str(e)}")
+        return error_response(f"Erreur lors de la génération du PDF: {str(e)}", 500)
 
     return error_response("Type d'utilisateur non supporté", 400)

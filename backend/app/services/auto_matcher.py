@@ -43,7 +43,7 @@ class AutoMatcherService:
                 auto_match=True
             ).all()
 
-            current_app.logger.info(f"🔍 Recherche de matchs pour {candidate.full_name} parmi {len(active_jobs)} offres")
+            current_app.logger.info(f"🔍 Recherche de matchs pour {candidate.user.full_name if candidate.user else 'N/A'} parmi {len(active_jobs)} offres")
 
             matches_created = []
 
@@ -75,7 +75,7 @@ class AutoMatcherService:
 
                     if match:
                         matches_created.append(match)
-                        current_app.logger.info(f"✅ Match créé: {candidate.full_name} <-> {job.title} (Score: {match_score}%)")
+                        current_app.logger.info(f"✅ Match créé: {candidate.user.full_name if candidate.user else 'N/A'} <-> {job.title} (Score: {match_score}%)")
 
             current_app.logger.info(f"🎯 {len(matches_created)} nouveau(x) match(s) créé(s)")
             return matches_created
@@ -423,7 +423,7 @@ class AutoMatcherService:
                 user_id=company.user_id,
                 notification_type='new_match',
                 title=f"{emoji} Nouveau candidat correspondant!",
-                message=f"{candidate.full_name} correspond à votre offre '{job.title}' (Match: {match.match_score}%)",
+                message=f"{candidate.user.full_name if candidate.user else 'Un candidat'} correspond à votre offre '{job.title}' (Match: {match.match_score}%)",
                 data={
                     'match_id': match.id,
                     'candidate_id': candidate.id,
@@ -456,7 +456,7 @@ class AutoMatcherService:
 
             if candidate_notification:
                 match.candidate_notified_at = now
-                current_app.logger.info(f"📧 Notification envoyée au candidat {candidate.full_name}")
+                current_app.logger.info(f"📧 Notification envoyée au candidat {candidate.user.full_name if candidate.user else 'N/A'}")
 
             # Commit les mises à jour des timestamps
             db.session.commit()

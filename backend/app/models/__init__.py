@@ -14,6 +14,9 @@ from app.models.notification import Notification, create_notification
 from app.models.poster import Poster
 from app.models.match import Match
 from app.models.message import Message
+from app.models.favorite import Favorite
+from app.models.review import Review
+from app.models.skill_test import SkillTest, TestResult
 
 __all__ = [
     'User',
@@ -26,5 +29,9 @@ __all__ = [
     'create_notification',
     'Poster',
     'Match',
-    'Message'
+    'Message',
+    'Favorite',
+    'Review',
+    'SkillTest',
+    'TestResult'
 ]

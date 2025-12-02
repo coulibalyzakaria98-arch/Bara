@@ -16,7 +16,8 @@ import {
   Globe,
   FileText,
   Target,
-  Sparkles
+  Sparkles,
+  Download
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { matchesAPI, handleAPIError } from '../../services/api';
@@ -72,6 +73,43 @@ const MatchDetails = ({ matchId, userRole, onBack }) => {
       const { message } = handleAPIError(error);
       toast.error(message);
     }
+  };
+
+  const handleDownloadPDF = () => {
+    const token = localStorage.getItem('token');
+    const API_BASE_URL = 'http://localhost:5000/api';
+    const url = `${API_BASE_URL}/matches/${matchId}/download-pdf`;
+
+    // Créer un lien temporaire pour télécharger
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('Authorization', `Bearer ${token}`);
+
+    // Utiliser fetch pour télécharger avec le token
+    fetch(url, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    })
+      .then(response => {
+        if (!response.ok) throw new Error('Erreur de téléchargement');
+        return response.blob();
+      })
+      .then(blob => {
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `match_rapport_${matchId}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+        toast.success('PDF téléchargé avec succès');
+      })
+      .catch(error => {
+        toast.error('Erreur lors du téléchargement du PDF');
+        console.error('Erreur:', error);
+      });
   };
 
   const getScoreColor = (score) => {
@@ -150,13 +188,23 @@ const MatchDetails = ({ matchId, userRole, onBack }) => {
           <span>Retour aux matchs</span>
         </button>
 
-        <button
-          className={`favorite-btn-header ${isFavorite ? 'active' : ''}`}
-          onClick={handleToggleFavorite}
-        >
-          <Heart size={20} fill={isFavorite ? 'currentColor' : 'none'} />
-          <span>{isFavorite ? 'Retirer des favoris' : 'Ajouter aux favoris'}</span>
-        </button>
+        <div className="header-actions">
+          <button
+            className="download-pdf-btn"
+            onClick={handleDownloadPDF}
+          >
+            <Download size={20} />
+            <span>Télécharger PDF</span>
+          </button>
+
+          <button
+            className={`favorite-btn-header ${isFavorite ? 'active' : ''}`}
+            onClick={handleToggleFavorite}
+          >
+            <Heart size={20} fill={isFavorite ? 'currentColor' : 'none'} />
+            <span>{isFavorite ? 'Retirer des favoris' : 'Ajouter aux favoris'}</span>
+          </button>
+        </div>
       </div>
 
       <div className="details-container">
@@ -519,6 +567,31 @@ const MatchDetails = ({ matchId, userRole, onBack }) => {
         .back-btn:hover {
           background: rgba(255, 255, 255, 0.1);
           transform: translateX(-5px);
+        }
+
+        .header-actions {
+          display: flex;
+          align-items: center;
+          gap: 1rem;
+        }
+
+        .download-pdf-btn {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          padding: 0.75rem 1.5rem;
+          background: linear-gradient(135deg, #06b6d4, #3b82f6);
+          border: none;
+          border-radius: 12px;
+          color: white;
+          cursor: pointer;
+          transition: all 0.3s;
+          font-weight: 500;
+        }
+
+        .download-pdf-btn:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 4px 12px rgba(6, 182, 212, 0.4);
         }
 
         .favorite-btn-header {

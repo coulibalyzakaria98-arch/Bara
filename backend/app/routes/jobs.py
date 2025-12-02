@@ -10,7 +10,7 @@ from flask_jwt_extended import jwt_required, get_jwt_identity
 
 from app import db
 from app.models import User, Company, Job, JobApplication, Candidate
-from app.utils.helpers import success_response, error_response, paginated_response
+from app.utils.helpers import success_response, error_response, paginated_response, safe_int
 from app.services.matcher import MatcherService
 
 jobs_bp = Blueprint('jobs', __name__)
@@ -22,7 +22,7 @@ jobs_bp = Blueprint('jobs', __name__)
 
 def get_current_company():
     """Obtenir le profil entreprise de l'utilisateur connecté"""
-    user_id = get_jwt_identity()
+    user_id = safe_int(get_jwt_identity())
     user = User.query.get(user_id)
     
     if not user or user.role != 'company':
@@ -36,7 +36,7 @@ def get_current_company():
 
 def get_current_candidate():
     """Obtenir le profil candidat de l'utilisateur connecté"""
-    user_id = get_jwt_identity()
+    user_id = safe_int(get_jwt_identity())
     user = User.query.get(user_id)
     
     if not user or user.role != 'candidate':
@@ -109,13 +109,51 @@ def list_jobs():
     sector = request.args.get('sector')
     if sector:
         query = query.join(Company).filter(Company.sector.ilike(f'%{sector}%'))
-    
-    # Ordonner: urgent d'abord, puis featured, puis récent
-    query = query.order_by(
-        Job.is_urgent.desc(),
-        Job.is_featured.desc(),
-        Job.created_at.desc()
-    )
+
+    # Filtre par salaire minimum
+    min_salary = request.args.get('min_salary', type=int)
+    if min_salary:
+        query = query.filter(Job.salary_min >= min_salary)
+
+    # Filtre par salaire maximum
+    max_salary = request.args.get('max_salary', type=int)
+    if max_salary:
+        query = query.filter(Job.salary_max <= max_salary)
+
+    # Filtre par niveau d'éducation
+    education_level = request.args.get('education_level')
+    if education_level:
+        query = query.filter_by(education_level=education_level)
+
+    # Filtre par compétences (AND - toutes les compétences requises)
+    skills = request.args.get('skills')
+    if skills:
+        skills_list = [s.strip() for s in skills.split(',')]
+        for skill in skills_list:
+            query = query.filter(Job.required_skills.contains([skill]))
+
+    # Filtre par années d'expérience minimum
+    min_experience = request.args.get('min_experience', type=int)
+    if min_experience is not None:
+        query = query.filter(Job.min_experience_years <= min_experience)
+
+    # Tri personnalisé
+    sort_by = request.args.get('sort_by', 'recent')
+    if sort_by == 'salary_desc':
+        query = query.order_by(Job.salary_max.desc().nullslast())
+    elif sort_by == 'salary_asc':
+        query = query.order_by(Job.salary_min.asc().nullslast())
+    elif sort_by == 'experience_desc':
+        query = query.order_by(Job.min_experience_years.desc().nullslast())
+    elif sort_by == 'experience_asc':
+        query = query.order_by(Job.min_experience_years.asc().nullslast())
+    else:  # recent (default)
+        # Ordonner: urgent d'abord, puis featured, puis récent
+        query = query.order_by(
+            Job.is_urgent.desc(),
+            Job.is_featured.desc(),
+            Job.created_at.desc()
+        )
     
     pagination = query.paginate(page=page, per_page=per_page, error_out=False)
     

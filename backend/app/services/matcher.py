@@ -21,9 +21,6 @@ class MatcherService:
         'salary': 0.10        # 10% - Salaire
     }
     
-    def __init__(self):
-        pass
-    
     def calculate_match_score(self, candidate, job):
         """
         Calculer le score de matching entre un candidat et une offre

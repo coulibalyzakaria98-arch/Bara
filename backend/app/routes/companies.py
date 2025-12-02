@@ -10,7 +10,7 @@ from flask_jwt_extended import jwt_required, get_jwt_identity
 
 from app import db
 from app.models import User, Company, Job, JobApplication, Candidate
-from app.utils.helpers import success_response, error_response, paginated_response
+from app.utils.helpers import success_response, error_response, paginated_response, safe_int
 
 companies_bp = Blueprint('companies', __name__)
 
@@ -21,7 +21,7 @@ companies_bp = Blueprint('companies', __name__)
 
 def get_current_company():
     """Obtenir le profil entreprise de l'utilisateur connecté"""
-    user_id = get_jwt_identity()
+    user_id = safe_int(get_jwt_identity())
     user = User.query.get(user_id)
     
     if not user or user.role != 'company':

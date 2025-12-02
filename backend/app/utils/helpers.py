@@ -218,16 +218,38 @@ def safe_int(value, default=0):
     """
     Convertir une valeur en entier de manière sécurisée
     
+    Utilisé pour JWT identity (type string) vers user_id (type int)
+    
     Args:
-        value: Valeur à convertir
-        default: Valeur par défaut si conversion échoue
+        value: Valeur à convertir (None, str, int)
+        default: Valeur par défaut si conversion échoue (défaut: 0)
         
     Returns:
         int: Valeur convertie ou défaut
+        
+    Example:
+        >>> safe_int("42")
+        42
+        >>> safe_int(None)
+        0
+        >>> safe_int("invalid", default=-1)
+        -1
     """
+    if value is None:
+        return default
+    
     try:
-        return int(value)
+        result = int(value)
+        if result < 0:
+            # Log negative IDs as suspicious (user_id should be positive)
+            from flask import current_app
+            current_app.logger.warning(f"safe_int() received negative value: {value}")
+            return default
+        return result
     except (TypeError, ValueError):
+        # Log conversion failures for debugging
+        from flask import current_app
+        current_app.logger.debug(f"safe_int() failed to convert {type(value).__name__}: {repr(value)}")
         return default
 
 

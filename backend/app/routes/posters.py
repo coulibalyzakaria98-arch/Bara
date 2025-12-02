@@ -14,7 +14,7 @@ import time
 from app import db
 from app.models import User, Company, Job, Poster
 from app.services.poster_generator import poster_generator
-from app.utils.helpers import success_response, error_response
+from app.utils.helpers import success_response, error_response, safe_int
 
 posters_bp = Blueprint('posters', __name__)
 
@@ -35,7 +35,7 @@ def generate_poster():
         "include_qr_code": bool (optional)
     }
     """
-    user_id = get_jwt_identity()
+    user_id = safe_int(get_jwt_identity())
     data = request.get_json()
 
     # Validation
@@ -161,7 +161,7 @@ def get_posters():
     - job_id: Filtrer par offre d'emploi
     - limit: Nombre max (default: 20)
     """
-    user_id = get_jwt_identity()
+    user_id = safe_int(get_jwt_identity())
 
     user = User.query.get(user_id)
     if not user or user.role != 'company':
@@ -192,7 +192,7 @@ def get_posters():
 @jwt_required()
 def get_poster(poster_id):
     """Récupérer une affiche par ID"""
-    user_id = get_jwt_identity()
+    user_id = safe_int(get_jwt_identity())
 
     user = User.query.get(user_id)
     if not user or user.role != 'company':
@@ -257,7 +257,7 @@ def view_poster(poster_id):
 @jwt_required()
 def delete_poster(poster_id):
     """Supprimer une affiche"""
-    user_id = get_jwt_identity()
+    user_id = safe_int(get_jwt_identity())
 
     user = User.query.get(user_id)
     if not user or user.role != 'company':
@@ -294,7 +294,7 @@ def delete_poster(poster_id):
 @jwt_required()
 def publish_poster(poster_id):
     """Publier/dépublier une affiche"""
-    user_id = get_jwt_identity()
+    user_id = safe_int(get_jwt_identity())
     data = request.get_json() or {}
 
     user = User.query.get(user_id)

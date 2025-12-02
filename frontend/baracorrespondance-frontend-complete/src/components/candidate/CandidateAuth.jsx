@@ -1,10 +1,26 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { ArrowLeft, Mail, Lock, User, Phone, Briefcase } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { useLocation, useNavigate } from 'react-router-dom';
 
-const CandidateAuth = ({ onBack, onLogin, onRegister }) => {
-  const [isLogin, setIsLogin] = useState(true);
+// Sous-composant pour les champs de formulaire pour éviter la répétition
+const FormInput = ({ icon, ...props }) => (
+  <div className="relative">
+    <span className="absolute inset-y-0 left-0 flex items-center pl-3">
+      {icon}
+    </span>
+    <input
+      {...props}
+      className="form-input pl-10" // Padding à gauche pour l'icône
+    />
+  </div>
+);
+
+const CandidateAuth = ({ onLogin, onRegister }) => {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const [isLogin, setIsLogin] = useState(location.pathname === '/login');
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [resetEmail, setResetEmail] = useState('');
   const [formData, setFormData] = useState({
@@ -16,204 +32,100 @@ const CandidateAuth = ({ onBack, onLogin, onRegister }) => {
     profession: ''
   });
 
+  useEffect(() => {
+    setIsLogin(location.pathname === '/login');
+  }, [location.pathname]);
+
   const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
+    setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleLoginSubmit = async (e) => {
+  const handleLoginSubmit = (e) => {
     e.preventDefault();
-    const success = await onLogin(formData.email, formData.password);
-    if (!success) {
-      // Error already handled by onLogin
-    }
+    onLogin(formData.email, formData.password);
   };
 
   const handleRegisterSubmit = async (e) => {
     e.preventDefault();
-
     if (formData.password !== formData.confirmPassword) {
-      toast.error("Les mots de passe ne correspondent pas");
-      return;
+      return toast.error("Les mots de passe ne correspondent pas.");
     }
-
     if (formData.password.length < 8) {
-      toast.error("Le mot de passe doit contenir au moins 8 caractères");
-      return;
+      return toast.error("Le mot de passe doit faire au moins 8 caractères.");
     }
 
-    // Split name into first_name and last_name
     const nameParts = formData.name.trim().split(' ');
-    const firstName = nameParts[0] || '';
-    const lastName = nameParts.slice(1).join(' ') || '';
-
-    // Transform data to match backend API
     const registerData = {
       email: formData.email,
       password: formData.password,
       role: 'candidate',
-      first_name: firstName,
-      last_name: lastName,
+      first_name: nameParts[0] || '',
+      last_name: nameParts.slice(1).join(' ') || '',
       phone: formData.phone,
       title: formData.profession
     };
-
-    try {
-      const result = await onRegister(registerData);
-      if (!result || !result.success) {
-        // Error already handled by onRegister
-      }
-    } catch (error) {
-      console.error('Erreur inscription:', error);
-      toast.error('Une erreur est survenue lors de l\'inscription');
-    }
+    onRegister(registerData);
   };
-
-  const handleForgotPassword = async (e) => {
+  
+  const handleForgotPassword = (e) => {
     e.preventDefault();
-    if (!resetEmail) {
-      toast.error('Veuillez entrer votre email');
-      return;
-    }
-
-    try {
-      // TODO: Call password reset API
-      toast.success('Un email de réinitialisation a été envoyé à ' + resetEmail);
-      setShowForgotPassword(false);
-      setResetEmail('');
-    } catch (error) {
-      toast.error('Erreur lors de l\'envoi de l\'email');
-    }
+    toast.success('Si un compte existe pour ' + resetEmail + ', un email de réinitialisation a été envoyé.');
+    setShowForgotPassword(false);
+    setResetEmail('');
   };
+
+  const formTitle = isLogin ? 'Connexion Candidat' : 'Devenez Candidat';
+  const formSubtitle = isLogin ? 'Accédez à votre espace pour trouver le job de vos rêves.' : 'Créez un compte pour commencer votre recherche.';
 
   return (
-    <div className="auth-page">
-      {/* Background Animation */}
-      <div className="background-animation">
-        <div className="orb orb-1"></div>
-        <div className="orb orb-2"></div>
-        <div className="orb orb-3"></div>
-        <div className="grid-pattern"></div>
-      </div>
-
-      <div className="auth-container">
-        {/* Back Button */}
-        <motion.button
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          onClick={onBack}
-          className="back-btn"
-        >
+    <div className="min-h-screen flex flex-col items-center justify-center bg-light-bg p-4 relative">
+      <div className="background-pattern"></div>
+      
+      <div className="w-full max-w-md">
+        <button onClick={() => navigate(-1)} className="btn btn-secondary mb-4">
           <ArrowLeft size={20} />
-          <span>Retour</span>
-        </motion.button>
+          Retour
+        </button>
 
-        {/* Auth Card */}
         <motion.div
+          key={isLogin ? 'login' : 'register'}
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="auth-card"
+          transition={{ duration: 0.5 }}
+          className="card"
         >
-          {/* Header */}
-          <div className="auth-header">
-            <div className="auth-icon">🚀</div>
-            <h2>{isLogin ? 'Connexion Talent' : 'Créer votre compte'}</h2>
-            <p>{isLogin ? 'Connectez-vous pour accéder à votre espace' : 'Rejoignez des milliers de talents'}</p>
+          <div className="text-center mb-8">
+            <h1 className="card-title text-2xl">{formTitle}</h1>
+            <p className="text-text-muted">{formSubtitle}</p>
           </div>
 
-          {/* Form */}
-          <form onSubmit={isLogin ? handleLoginSubmit : handleRegisterSubmit} className="auth-form">
-            {!isLogin && (
-              <div className="form-group">
-                <label>
-                  <User size={18} />
-                  <span>Nom complet *</span>
-                </label>
-                <input
-                  type="text"
-                  name="name"
-                  value={formData.name}
-                  onChange={handleChange}
-                  required
-                  placeholder="Votre nom et prénom"
-                  className="form-input"
-                />
-              </div>
-            )}
-
-            <div className="form-group">
-              <label>
-                <Mail size={18} />
-                <span>Email *</span>
-              </label>
-              <input
-                type="email"
-                name="email"
-                value={formData.email}
-                onChange={handleChange}
-                required
-                placeholder="votre@email.com"
-                className="form-input"
-              />
-            </div>
-
+          <form onSubmit={isLogin ? handleLoginSubmit : handleRegisterSubmit}>
             {!isLogin && (
               <>
                 <div className="form-group">
-                  <label>
-                    <Phone size={18} />
-                    <span>Téléphone</span>
-                  </label>
-                  <input
-                    type="tel"
-                    name="phone"
-                    value={formData.phone}
-                    onChange={handleChange}
-                    placeholder="+33 6 12 34 56 78"
-                    className="form-input"
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label>
-                    <Briefcase size={18} />
-                    <span>Profession *</span>
-                  </label>
-                  <input
-                    type="text"
-                    name="profession"
-                    value={formData.profession}
-                    onChange={handleChange}
-                    required
-                    placeholder="Développeur, Designer, etc."
-                    className="form-input"
-                  />
+                  <label className="form-label">Nom complet</label>
+                  <FormInput icon={<User size={18} className="text-gray-400" />} type="text" name="name" value={formData.name} onChange={handleChange} required placeholder="Ex: Mariam Diallo" />
                 </div>
               </>
             )}
 
             <div className="form-group">
-              <label>
-                <Lock size={18} />
-                <span>Mot de passe *</span>
-              </label>
-              <input
-                type="password"
-                name="password"
-                value={formData.password}
-                onChange={handleChange}
-                required
-                placeholder={isLogin ? 'Votre mot de passe' : 'Minimum 8 caractères (maj, min, chiffre)'}
-                className="form-input"
-              />
+              <label className="form-label">Email</label>
+              <FormInput icon={<Mail size={18} className="text-gray-400" />} type="email" name="email" value={formData.email} onChange={handleChange} required placeholder="votre.email@exemple.com" />
+            </div>
+            
+            {!isLogin && (
+               <div className="form-group">
+                  <label className="form-label">Profession</label>
+                  <FormInput icon={<Briefcase size={18} className="text-gray-400" />} type="text" name="profession" value={formData.profession} onChange={handleChange} required placeholder="Ex: Développeur Full-Stack" />
+                </div>
+            )}
+
+            <div className="form-group">
+              <label className="form-label">Mot de passe</label>
+              <FormInput icon={<Lock size={18} className="text-gray-400" />} type="password" name="password" value={formData.password} onChange={handleChange} required placeholder="••••••••" />
               {isLogin && (
-                <button
-                  type="button"
-                  onClick={() => setShowForgotPassword(true)}
-                  className="forgot-password-link"
-                >
+                <button type="button" onClick={() => setShowForgotPassword(true)} className="text-right text-sm text-primary hover:underline mt-2">
                   Mot de passe oublié ?
                 </button>
               )}
@@ -221,313 +133,54 @@ const CandidateAuth = ({ onBack, onLogin, onRegister }) => {
 
             {!isLogin && (
               <div className="form-group">
-                <label>
-                  <Lock size={18} />
-                  <span>Confirmer le mot de passe *</span>
-                </label>
-                <input
-                  type="password"
-                  name="confirmPassword"
-                  value={formData.confirmPassword}
-                  onChange={handleChange}
-                  required
-                  placeholder="Retapez votre mot de passe"
-                  className="form-input"
-                />
+                <label className="form-label">Confirmer le mot de passe</label>
+                <FormInput icon={<Lock size={18} className="text-gray-400" />} type="password" name="confirmPassword" value={formData.confirmPassword} onChange={handleChange} required placeholder="••••••••" />
               </div>
             )}
 
-            <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              type="submit"
-              className="submit-btn"
-            >
+            <button type="submit" className="btn btn-primary w-full mt-4">
               {isLogin ? 'Se connecter' : 'Créer mon compte'}
-            </motion.button>
+            </button>
           </form>
 
-          {/* Switch Auth Mode */}
-          <div className="auth-switch">
-            <p>{isLogin ? 'Pas encore de compte ?' : 'Déjà un compte ?'}</p>
-            <button 
-              type="button"
-              onClick={() => setIsLogin(!isLogin)}
-              className="switch-btn"
-            >
-              {isLogin ? 'Créer un compte' : 'Se connecter'}
-            </button>
+          <div className="text-center mt-6 pt-6 border-t border-border">
+            <p className="text-text-muted text-sm">
+              {isLogin ? 'Pas encore de compte ?' : 'Vous avez déjà un compte ?'}{' '}
+              <button 
+                onClick={() => navigate(isLogin ? '/register' : '/login', { state: { userType: 'candidate' } })}
+                className="font-semibold text-primary hover:underline"
+              >
+                {isLogin ? 'Inscrivez-vous' : 'Connectez-vous'}
+              </button>
+            </p>
           </div>
-
-
-          {/* Terms */}
-          {!isLogin && (
-            <div className="auth-terms">
-              <p>En créant un compte, vous acceptez nos 
-                <a href="#"> Conditions d'utilisation</a> et notre 
-                <a href="#"> Politique de confidentialité</a>
-              </p>
-            </div>
-          )}
         </motion.div>
-
-        {/* Forgot Password Modal */}
-        {showForgotPassword && (
-          <div className="modal-overlay" onClick={() => setShowForgotPassword(false)}>
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="modal-content"
-              onClick={e => e.stopPropagation()}
-            >
-              <h3>Réinitialiser le mot de passe</h3>
-              <p className="modal-description">
-                Entrez votre adresse email et nous vous enverrons un lien pour réinitialiser votre mot de passe.
-              </p>
-              <form onSubmit={handleForgotPassword} className="modal-form">
-                <div className="form-group">
-                  <label>
-                    <Mail size={18} />
-                    <span>Email</span>
-                  </label>
-                  <input
-                    type="email"
-                    value={resetEmail}
-                    onChange={(e) => setResetEmail(e.target.value)}
-                    placeholder="votre@email.com"
-                    className="form-input"
-                    required
-                  />
-                </div>
-                <div className="modal-actions">
-                  <button
-                    type="button"
-                    onClick={() => setShowForgotPassword(false)}
-                    className="modal-btn cancel"
-                  >
-                    Annuler
-                  </button>
-                  <button type="submit" className="modal-btn confirm">
-                    Envoyer
-                  </button>
-                </div>
-              </form>
-            </motion.div>
-          </div>
-        )}
       </div>
 
-      <style jsx>{`
-        .auth-page {
-          min-height: 100vh;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          position: relative;
-          padding: 2rem;
-        }
-
-        .auth-container {
-          max-width: 500px;
-          width: 100%;
-          position: relative;
-          z-index: 10;
-        }
-
-        .back-btn {
-          display: flex;
-          align-items: center;
-          gap: 0.5rem;
-          padding: 0.75rem 1.5rem;
-          background: rgba(255, 255, 255, 0.05);
-          border: 1px solid rgba(255, 255, 255, 0.1);
-          border-radius: 12px;
-          color: #e2e8f0;
-          font-size: 0.875rem;
-          font-weight: 500;
-          cursor: pointer;
-          transition: all 0.3s;
-          margin-bottom: 2rem;
-        }
-
-        .back-btn:hover {
-          background: rgba(255, 255, 255, 0.1);
-          transform: translateX(-5px);
-        }
-
-        .auth-card {
-          background: rgba(255, 255, 255, 0.03);
-          backdrop-filter: blur(10px);
-          border: 1px solid rgba(255, 255, 255, 0.1);
-          border-radius: 24px;
-          padding: 3rem;
-        }
-
-        .auth-header {
-          text-align: center;
-          margin-bottom: 2rem;
-        }
-
-        .auth-icon {
-          font-size: 3rem;
-          margin-bottom: 1rem;
-        }
-
-        .auth-header h2 {
-          font-size: 1.875rem;
-          font-weight: 700;
-          color: #fff;
-          margin-bottom: 0.5rem;
-        }
-
-        .auth-header p {
-          color: #94a3b8;
-          font-size: 0.875rem;
-        }
-
-        .auth-form {
-          display: flex;
-          flex-direction: column;
-          gap: 1.25rem;
-        }
-
-        .form-group {
-          display: flex;
-          flex-direction: column;
-          gap: 0.5rem;
-        }
-
-        .form-group label {
-          display: flex;
-          align-items: center;
-          gap: 0.5rem;
-          color: #cbd5e1;
-          font-size: 0.875rem;
-          font-weight: 500;
-        }
-
-        .form-input {
-          width: 100%;
-          padding: 0.875rem 1rem;
-          background: rgba(255, 255, 255, 0.05);
-          border: 1px solid rgba(255, 255, 255, 0.1);
-          border-radius: 12px;
-          color: #e2e8f0;
-          font-size: 0.875rem;
-          transition: all 0.3s;
-        }
-
-        .form-input:focus {
-          outline: none;
-          border-color: #06b6d4;
-          background: rgba(255, 255, 255, 0.08);
-          box-shadow: 0 0 0 3px rgba(6, 182, 212, 0.1);
-        }
-
-        .form-input::placeholder {
-          color: rgba(226, 232, 240, 0.4);
-        }
-
-        .submit-btn {
-          width: 100%;
-          padding: 1rem;
-          background: linear-gradient(135deg, #06b6d4, #3b82f6);
-          border: none;
-          border-radius: 12px;
-          color: #fff;
-          font-size: 1rem;
-          font-weight: 600;
-          cursor: pointer;
-          transition: all 0.3s;
-          margin-top: 0.5rem;
-        }
-
-        .submit-btn:hover {
-          box-shadow: 0 10px 30px rgba(6, 182, 212, 0.3);
-        }
-
-        .auth-switch {
-          text-align: center;
-          margin-top: 1.5rem;
-          padding-top: 1.5rem;
-          border-top: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .auth-switch p {
-          color: #94a3b8;
-          font-size: 0.875rem;
-          margin-bottom: 0.5rem;
-        }
-
-        .switch-btn {
-          background: none;
-          border: none;
-          color: #06b6d4;
-          font-size: 0.875rem;
-          font-weight: 600;
-          cursor: pointer;
-          transition: all 0.3s;
-        }
-
-        .switch-btn:hover {
-          color: #0891b2;
-          text-decoration: underline;
-        }
-
-        .demo-accounts {
-          margin-top: 1.5rem;
-          padding: 1rem;
-          background: rgba(6, 182, 212, 0.1);
-          border: 1px solid rgba(6, 182, 212, 0.2);
-          border-radius: 12px;
-          text-align: center;
-        }
-
-        .demo-title {
-          color: #06b6d4;
-          font-size: 0.875rem;
-          font-weight: 600;
-          margin-bottom: 0.5rem;
-        }
-
-        .demo-info {
-          color: #cbd5e1;
-          font-size: 0.75rem;
-          font-family: 'Courier New', monospace;
-        }
-
-        .auth-terms {
-          margin-top: 1.5rem;
-          padding-top: 1.5rem;
-          border-top: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .auth-terms p {
-          color: #64748b;
-          font-size: 0.75rem;
-          text-align: center;
-          line-height: 1.6;
-        }
-
-        .auth-terms a {
-          color: #06b6d4;
-          text-decoration: none;
-        }
-
-        .auth-terms a:hover {
-          text-decoration: underline;
-        }
-
-        @media (max-width: 640px) {
-          .auth-page {
-            padding: 1rem;
-          }
-
-          .auth-card {
-            padding: 2rem 1.5rem;
-          }
-        }
-      `}</style>
+      {/* Modale Mot de passe oublié */}
+      {showForgotPassword && (
+        <div className="modal-overlay">
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="modal-content">
+            <div className="modal-header">
+              <h2 className="modal-title">Réinitialiser</h2>
+              <button onClick={() => setShowForgotPassword(false)} className="modal-close-btn">&times;</button>
+            </div>
+            <form onSubmit={handleForgotPassword}>
+              <div className="modal-body">
+                <p className="text-text-muted mb-4">Entrez votre email pour recevoir un lien de réinitialisation.</p>
+                <div className="form-group">
+                  <label className="form-label">Email</label>
+                  <FormInput icon={<Mail size={18} className="text-gray-400" />} type="email" value={resetEmail} onChange={(e) => setResetEmail(e.target.value)} required placeholder="votre.email@exemple.com" />
+                </div>
+              </div>
+              <div className="modal-footer">
+                <button type="button" onClick={() => setShowForgotPassword(false)} className="btn btn-secondary">Annuler</button>
+                <button type="submit" className="btn btn-primary">Envoyer le lien</button>
+              </div>
+            </form>
+          </motion.div>
+        </div>
+      )}
     </div>
   );
 };

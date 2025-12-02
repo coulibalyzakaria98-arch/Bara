@@ -1,167 +1,82 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Users, Briefcase, TrendingUp, Target, User, Wand2 } from 'lucide-react';
-import NotificationBell from '../shared/NotificationBell';
-import PosterGenerator from './PosterGenerator';
-import MatchesList from '../shared/MatchesList';
-import MatchesBadge from '../shared/MatchesBadge';
+import { Briefcase, UserPlus, FileText, Plus } from 'lucide-react';
+import { useApp } from '../../contexts/AppContext';
+import { Link } from 'react-router-dom';
 
-const CompanyDashboard = ({ user, onLogout, onNavigateToProfile }) => {
-  const [currentView, setCurrentView] = useState('dashboard'); // dashboard, posters, matches
+import DashboardLayout from '../common/DashboardLayout';
+import JobManagement from './JobManagement';
+import CompanyCandidatesMatching from './CompanyCandidatesMatching';
+import CompanyApplications from './CompanyApplications';
 
-  // Si on est dans la vue poster generator
-  if (currentView === 'posters') {
-    return <PosterGenerator user={user} onBack={() => setCurrentView('dashboard')} />;
-  }
-
-  // Si on est dans la vue matches
-  if (currentView === 'matches') {
-    return <MatchesList userRole="company" onBack={() => setCurrentView('dashboard')} />;
-  }
-
-  // Vue dashboard normale
-  return (
-    <div style={{ minHeight: '100vh', background: '#0f172a' }}>
-      <nav style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '1.5rem 2rem', background: 'rgba(255,255,255,0.02)', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
-        <button onClick={onLogout} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.75rem 1.5rem', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', color: '#e2e8f0', cursor: 'pointer' }}>
-          <ArrowLeft size={20} />
-          <span>Déconnexion</span>
-        </button>
-        
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-          <div>
-            <h1 style={{ fontSize: '1.25rem', fontWeight: 700, color: '#fff', margin: 0 }}>BaraCorrespondance</h1>
-            <p style={{ fontSize: '0.75rem', color: '#94a3b8', margin: 0 }}>Espace Entreprise - {user?.profile?.name || user?.full_name || user?.email}</p>
-          </div>
+const StatCard = ({ icon, value, label, color }) => (
+    <div className="card p-6">
+        <div className={`mb-4 inline-block p-3 rounded-full bg-${color}-100 text-${color}-600`}>
+            {icon}
         </div>
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-          <button
-            onClick={onNavigateToProfile}
-            title="Mon profil"
-            style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '8px', padding: '8px', cursor: 'pointer', color: '#e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-          >
-            <User size={20} />
-          </button>
-          <MatchesBadge onClick={() => setCurrentView('matches')} />
-          <NotificationBell />
-          <div onClick={onNavigateToProfile} style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'linear-gradient(135deg, #8b5cf6, #ec4899)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 700, cursor: 'pointer' }}>
-            {(user?.profile?.name || user?.full_name || user?.email)?.charAt(0)?.toUpperCase()}
-          </div>
-          <span style={{ color: '#e2e8f0', fontSize: '0.875rem' }}>{user?.profile?.name || user?.full_name || user?.email}</span>
-        </div>
-      </nav>
-
-      <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '2rem' }}>
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} style={{ textAlign: 'center', marginBottom: '3rem' }}>
-          <h2 style={{ fontSize: '2.5rem', fontWeight: 700, color: '#fff', marginBottom: '1rem' }}>
-            Bienvenue, <span style={{ background: 'linear-gradient(135deg, #8b5cf6, #ec4899)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>{user?.profile?.name || user?.full_name || user?.email}</span>
-          </h2>
-          <p style={{ color: '#94a3b8', fontSize: '1.125rem' }}>
-            Gérez vos recrutements et trouvez les meilleurs talents grâce à notre IA
-          </p>
-        </motion.div>
-
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1.5rem', marginBottom: '3rem' }}>
-          {[
-            { icon: Users, value: '0', label: 'Candidats', color: '#06b6d4' },
-            { icon: Briefcase, value: '0', label: 'Offres actives', color: '#8b5cf6' },
-            { icon: TrendingUp, value: '0%', label: 'Taux de match', color: '#10b981' },
-            { icon: Target, value: '0', label: 'Entretiens', color: '#f59e0b' },
-          ].map((stat, index) => (
-            <motion.div
-              key={index}
-              whileHover={{ scale: 1.05, y: -5 }}
-              style={{ background: 'rgba(255,255,255,0.03)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '16px', padding: '2rem', textAlign: 'center' }}
-            >
-              <div style={{ marginBottom: '1rem' }}>
-                <stat.icon size={32} color={stat.color} />
-              </div>
-              <div style={{ fontSize: '2rem', fontWeight: 800, color: '#fff', marginBottom: '0.5rem' }}>{stat.value}</div>
-              <div style={{ fontSize: '0.875rem', color: '#94a3b8', textTransform: 'uppercase' }}>{stat.label}</div>
-            </motion.div>
-          ))}
-        </div>
-
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.5rem' }}>
-          <motion.div
-            whileHover={{ scale: 1.02 }}
-            style={{ background: 'rgba(255,255,255,0.03)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '24px', padding: '2rem', textAlign: 'center', cursor: 'pointer' }}
-          >
-            <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>💼</div>
-            <h3 style={{ fontSize: '1.25rem', fontWeight: 700, color: '#fff', marginBottom: '0.5rem' }}>Offres d'emploi</h3>
-            <p style={{ color: '#94a3b8', fontSize: '0.875rem', marginBottom: '1.5rem' }}>
-              Créer et gérer vos annonces
-            </p>
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              style={{ padding: '0.75rem 1.5rem', background: 'linear-gradient(135deg, #06b6d4, #3b82f6)', border: 'none', borderRadius: '12px', color: '#fff', fontSize: '0.875rem', fontWeight: 600, cursor: 'pointer' }}
-            >
-              Créer une offre
-            </motion.button>
-          </motion.div>
-
-          <motion.div
-            whileHover={{ scale: 1.02 }}
-            onClick={() => setCurrentView('matches')}
-            style={{ background: 'rgba(255,255,255,0.03)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '24px', padding: '2rem', textAlign: 'center', cursor: 'pointer' }}
-          >
-            <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🎯</div>
-            <h3 style={{ fontSize: '1.25rem', fontWeight: 700, color: '#fff', marginBottom: '0.5rem' }}>Candidats Matchés</h3>
-            <p style={{ color: '#94a3b8', fontSize: '0.875rem', marginBottom: '1.5rem' }}>
-              Talents détectés automatiquement
-            </p>
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              style={{ padding: '0.75rem 1.5rem', background: 'linear-gradient(135deg, #10b981, #059669)', border: 'none', borderRadius: '12px', color: '#fff', fontSize: '0.875rem', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem', margin: '0 auto' }}
-            >
-              <Target size={16} />
-              Voir les matchs
-            </motion.button>
-          </motion.div>
-
-          <motion.div
-            whileHover={{ scale: 1.02 }}
-            onClick={() => setCurrentView('posters')}
-            style={{ background: 'rgba(255,255,255,0.03)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '24px', padding: '2rem', textAlign: 'center', cursor: 'pointer' }}
-          >
-            <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🎨</div>
-            <h3 style={{ fontSize: '1.25rem', fontWeight: 700, color: '#fff', marginBottom: '0.5rem' }}>Affiches IA</h3>
-            <p style={{ color: '#94a3b8', fontSize: '0.875rem', marginBottom: '1.5rem' }}>
-              Générer des affiches attrayantes
-            </p>
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              style={{ padding: '0.75rem 1.5rem', background: 'linear-gradient(135deg, #8b5cf6, #ec4899)', border: 'none', borderRadius: '12px', color: '#fff', fontSize: '0.875rem', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem', margin: '0 auto' }}
-            >
-              <Wand2 size={16} />
-              Créer une affiche
-            </motion.button>
-          </motion.div>
-
-          <motion.div
-            whileHover={{ scale: 1.02 }}
-            style={{ background: 'rgba(255,255,255,0.03)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '24px', padding: '2rem', textAlign: 'center', cursor: 'pointer' }}
-          >
-            <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>📊</div>
-            <h3 style={{ fontSize: '1.25rem', fontWeight: 700, color: '#fff', marginBottom: '0.5rem' }}>Analytics</h3>
-            <p style={{ color: '#94a3b8', fontSize: '0.875rem', marginBottom: '1.5rem' }}>
-              Statistiques détaillées
-            </p>
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              style={{ padding: '0.75rem 1.5rem', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', color: '#e2e8f0', fontSize: '0.875rem', fontWeight: 600, cursor: 'pointer' }}
-            >
-              Voir les stats
-            </motion.button>
-          </motion.div>
-        </div>
-      </div>
+        <p className="text-3xl font-bold">{value}</p>
+        <p className="text-sm text-gray-500">{label}</p>
     </div>
+);
+
+const CompanyDashboard = ({ user }) => {
+  const { logout } = useApp();
+  const [currentView, setCurrentView] = useState('dashboard');
+
+  const recentJobs = [
+    { id: 1, title: 'Développeur Full-Stack Senior', candidates: 12, status: 'Actif' },
+    { id: 2, title: 'Responsable Marketing Digital', candidates: 35, status: 'Actif' },
+    { id: 3, title: 'Comptable Expérimenté', candidates: 8, status: 'Fermé' },
+  ];
+
+  const renderContent = () => {
+    switch(currentView) {
+        case 'jobs':
+            return <JobManagement onBack={() => setCurrentView('dashboard')} />;
+        case 'candidates':
+            return <CompanyCandidatesMatching onBack={() => setCurrentView('dashboard')} />;
+        case 'applications':
+            return <CompanyApplications onBack={() => setCurrentView('dashboard')} />;
+        default:
+            return (
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+                    <StatCard icon={<Briefcase size={24} />} value="5" label="Offres actives" color="blue" />
+                    <StatCard icon={<UserPlus size={24} />} value="28" label="Nouvelles candidatures" color="green" />
+                    <StatCard icon={<FileText size={24} />} value="15" label="Candidats à examiner" color="yellow" />
+                    
+                    <div className="card bg-primary text-white flex flex-col items-center justify-center text-center p-6">
+                        <h3 className="card-title text-white">Prêt à trouver le talent idéal ?</h3>
+                        <p className="opacity-90 mb-4 text-sm">Publiez une nouvelle offre d'emploi.</p>
+                        <button onClick={() => setCurrentView('jobs')} className="btn btn-secondary bg-white text-primary w-full mt-auto">
+                            <Plus size={18} /> Publier une offre
+                        </button>
+                    </div>
+
+                    <div className="md:col-span-4">
+                        <div className="card">
+                            <h3 className="card-title">Vos dernières offres</h3>
+                            <ul className="divide-y divide-border">
+                                {recentJobs.map(job => (
+                                    <li key={job.id} className="py-3 flex justify-between items-center">
+                                        <div>
+                                            <p className="font-semibold">{job.title}</p>
+                                            <p className="text-sm text-gray-500">{job.candidates} candidats</p>
+                                        </div>
+                                        <span className={`badge ${job.status === 'Actif' ? 'badge-success' : 'badge-secondary'}`}>{job.status}</span>
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            );
+    }
+  }
+
+  return (
+    <DashboardLayout user={user} onLogout={logout} onNavigate={setCurrentView} currentView={currentView}>
+        {renderContent()}
+    </DashboardLayout>
   );
 };
 

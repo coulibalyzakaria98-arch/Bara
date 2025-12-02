@@ -10,7 +10,7 @@ from flask_jwt_extended import jwt_required, get_jwt_identity
 
 from app import db
 from app.models import User, Candidate, CVAnalysis, JobApplication
-from app.utils.helpers import success_response, error_response, paginated_response
+from app.utils.helpers import success_response, error_response, paginated_response, safe_int
 from app.utils.validators import allowed_cv_file
 
 candidates_bp = Blueprint('candidates', __name__)
@@ -22,7 +22,7 @@ candidates_bp = Blueprint('candidates', __name__)
 
 def get_current_candidate():
     """Obtenir le profil candidat de l'utilisateur connecté"""
-    user_id = get_jwt_identity()
+    user_id = safe_int(get_jwt_identity())
     user = User.query.get(user_id)
     
     if not user or user.role != 'candidate':
@@ -310,7 +310,8 @@ def get_stats():
 @jwt_required()
 def get_public_profile(candidate_id):
     """Obtenir le profil public d'un candidat (pour les entreprises)"""
-    user_id = get_jwt_identity()
+    from app.utils.helpers import safe_int
+    user_id = safe_int(get_jwt_identity())
     user = User.query.get(user_id)
     
     # Vérifier que c'est une entreprise

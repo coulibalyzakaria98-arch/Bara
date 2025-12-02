@@ -40,7 +40,7 @@ const MatchesBadge = ({ onClick }) => {
         </span>
       )}
 
-      <style jsx>{`
+      <style jsx="true">{`
         .matches-badge-button {
           position: relative;
           width: 40px;

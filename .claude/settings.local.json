@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(flask db migrate -m \"Add reviews, skill_tests, test_results tables\")"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

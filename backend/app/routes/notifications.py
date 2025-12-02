@@ -10,7 +10,7 @@ from datetime import datetime
 
 from app import db
 from app.models import User, Notification
-from app.utils.helpers import success_response, error_response
+from app.utils.helpers import success_response, error_response, safe_int
 
 notifications_bp = Blueprint('notifications', __name__)
 
@@ -25,7 +25,7 @@ def get_notifications():
     - limit: Nombre max (default: 20)
     - unread_only: true/false (default: false)
     """
-    user_id = get_jwt_identity()
+    user_id = safe_int(get_jwt_identity())
 
     limit = request.args.get('limit', 20, type=int)
     unread_only = request.args.get('unread_only', 'false').lower() == 'true'
@@ -53,7 +53,7 @@ def get_notifications():
 @jwt_required()
 def get_unread_count():
     """Récupérer le nombre de notifications non lues"""
-    user_id = get_jwt_identity()
+    user_id = safe_int(get_jwt_identity())
 
     count = Notification.query.filter_by(
         user_id=user_id,
@@ -69,7 +69,7 @@ def get_unread_count():
 @jwt_required()
 def mark_as_read(notification_id):
     """Marquer une notification comme lue"""
-    user_id = get_jwt_identity()
+    user_id = safe_int(get_jwt_identity())
 
     notification = Notification.query.filter_by(
         id=notification_id,
@@ -91,7 +91,7 @@ def mark_as_read(notification_id):
 @jwt_required()
 def mark_all_as_read():
     """Marquer toutes les notifications comme lues"""
-    user_id = get_jwt_identity()
+    user_id = safe_int(get_jwt_identity())
 
     notifications = Notification.query.filter_by(
         user_id=user_id,
@@ -112,7 +112,7 @@ def mark_all_as_read():
 @jwt_required()
 def delete_notification(notification_id):
     """Supprimer une notification"""
-    user_id = get_jwt_identity()
+    user_id = safe_int(get_jwt_identity())
 
     notification = Notification.query.filter_by(
         id=notification_id,
@@ -132,7 +132,7 @@ def delete_notification(notification_id):
 @jwt_required()
 def clear_all_notifications():
     """Supprimer toutes les notifications lues"""
-    user_id = get_jwt_identity()
+    user_id = safe_int(get_jwt_identity())
 
     deleted = Notification.query.filter_by(
         user_id=user_id,

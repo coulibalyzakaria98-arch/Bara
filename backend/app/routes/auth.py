@@ -17,7 +17,7 @@ from flask_jwt_extended import (
 from app import db
 from app.models import User, Candidate, Company
 from app.utils.validators import validate_email, validate_password
-from app.utils.helpers import success_response, error_response
+from app.utils.helpers import success_response, error_response, safe_int
 
 auth_bp = Blueprint('auth', __name__)
 
@@ -192,7 +192,7 @@ def login():
 @jwt_required(refresh=True)
 def refresh_token():
     """Rafraîchir le token d'accès"""
-    current_user_id = get_jwt_identity()
+    current_user_id = safe_int(get_jwt_identity())
     
     user = User.query.get(current_user_id)
     if not user or not user.is_active:
@@ -215,7 +215,7 @@ def refresh_token():
 @jwt_required()
 def get_current_user():
     """Obtenir les informations de l'utilisateur connecté"""
-    current_user_id = get_jwt_identity()
+    current_user_id = safe_int(get_jwt_identity())
     
     user = User.query.get(current_user_id)
     if not user:
@@ -230,7 +230,7 @@ def get_current_user():
 @jwt_required()
 def update_current_user():
     """Mettre à jour les informations de base de l'utilisateur"""
-    current_user_id = get_jwt_identity()
+    current_user_id = safe_int(get_jwt_identity())
     data = request.get_json()
     
     user = User.query.get(current_user_id)

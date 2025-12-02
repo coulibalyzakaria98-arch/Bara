@@ -43,7 +43,10 @@ class Config:
     CV_ANALYSIS_LIMIT_FREE = 3  # Analyses gratuites par mois
     MATCHING_THRESHOLD = 60  # Score minimum pour notification (%)
 
-    # OpenAI API
+    # Google Gemini API (Gratuit et performant)
+    GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')
+
+    # OpenAI API (Legacy - gardé pour compatibilité)
     OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
     OPENAI_MODEL = os.getenv('OPENAI_MODEL', 'gpt-4o-mini')
     

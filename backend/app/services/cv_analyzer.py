@@ -13,7 +13,17 @@ from datetime import datetime
 from flask import current_app
 from app import db
 from app.models import CVAnalysis, Candidate
-from app.services.ai_analyzer import ai_analyzer_service
+
+# Try to import Gemini analyzer module (optional - requires google-generativeai)
+# Import the module so we can inspect a GENAI_AVAILABLE flag exposed by it.
+try:
+    import app.services.gemini_analyzer as gemini_module
+    gemini_analyzer_service = getattr(gemini_module, 'gemini_analyzer_service', None)
+    GEMINI_AVAILABLE = getattr(gemini_module, 'GENAI_AVAILABLE', False)
+except (ImportError, ModuleNotFoundError):
+    # Module not present - disable Gemini features
+    gemini_analyzer_service = None
+    GEMINI_AVAILABLE = False
 
 
 class CVAnalyzerService:
@@ -52,10 +62,6 @@ class CVAnalyzerService:
         'gestion du temps', 'négociation', 'présentation', 'analyse'
     ]
     
-    def __init__(self):
-        """Initialiser le service"""
-        pass
-    
     def analyze_file(self, filepath, candidate_id):
         """
         Analyser un fichier CV complet
@@ -82,11 +88,11 @@ class CVAnalyzerService:
         recommendations = self._generate_recommendations(extracted_data, scores)
         keywords = self._extract_keywords(raw_text, extracted_data)
 
-        # Si la clé OpenAI est configurée, tenter d'obtenir une analyse IA et fusionner
+        # Si la clé Gemini est configurée ET Gemini disponible, tenter d'obtenir une analyse IA et fusionner
         try:
-            api_key = current_app.config.get('OPENAI_API_KEY') or None
-            if api_key:
-                ai_result = ai_analyzer_service.analyze_cv(raw_text)
+            api_key = current_app.config.get('GEMINI_API_KEY') or None
+            if api_key and GEMINI_AVAILABLE and gemini_analyzer_service:
+                ai_result = gemini_analyzer_service.analyze_cv(raw_text)
                 # Fusionner les données extraites par l'IA si présentes
                 if isinstance(ai_result, dict):
                     ai_extracted = ai_result.get('extracted_data')

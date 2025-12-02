@@ -9,118 +9,46 @@ import json
 import time
 import os
 from flask import current_app
-from openai import OpenAI
 from PIL import Image, ImageDraw, ImageFont
 from datetime import datetime
+
+# Try to import Gemini analyzer module (optional - requires google-generativeai)
+try:
+    import app.services.gemini_analyzer as gemini_module
+    gemini_analyzer_service = getattr(gemini_module, 'gemini_analyzer_service', None)
+    GEMINI_AVAILABLE = getattr(gemini_module, 'GENAI_AVAILABLE', False)
+except (ImportError, ModuleNotFoundError):
+    gemini_analyzer_service = None
+    GEMINI_AVAILABLE = False
 
 
 class PosterGeneratorService:
     """Service de génération d'affiches d'emploi avec IA"""
 
     def __init__(self):
-        self.client = None
-
-    def _get_client(self):
-        """Initialise le client OpenAI avec la clé API"""
-        if self.client is None:
-            api_key = current_app.config.get('OPENAI_API_KEY') or os.getenv('OPENAI_API_KEY')
-
-            if not api_key:
-                raise ValueError("OPENAI_API_KEY non configurée")
-
-            if not isinstance(api_key, str) or not api_key.startswith('sk-'):
-                current_app.logger.warning('OPENAI_API_KEY semble invalide')
-
-            self.client = OpenAI(api_key=api_key)
-        return self.client
+        pass
 
     def generate_poster_content(self, job_data):
         """
-        Génère du contenu attractif pour une affiche d'emploi
+        Génère du contenu attractif pour une affiche d'emploi avec Gemini
 
         Args:
             job_data: Dictionnaire contenant les infos du job
-                {
-                    'title': str,
-                    'description': str,
-                    'company_name': str,
-                    'location': str,
-                    'contract_type': str,
-                    'required_skills': list,
-                    'benefits': list
-                }
 
         Returns:
-            dict: Contenu généré
-                {
-                    'headline': str,        # Titre accrocheur
-                    'tagline': str,         # Slogan court
-                    'description': str,     # Description optimisée
-                    'keywords': list,       # Mots-clés
-                    'call_to_action': str   # Appel à l'action
-                }
+            dict: Contenu généré pour l'affiche
         """
         try:
-            client = self._get_client()
-            model = current_app.config.get('OPENAI_MODEL', 'gpt-4o-mini')
+            # Vérifier que Gemini est disponible ET configuré
+            api_key = current_app.config.get('GEMINI_API_KEY') or None
+            if GEMINI_AVAILABLE and gemini_analyzer_service and api_key:
+                return gemini_analyzer_service.generate_poster_content(job_data)
+            else:
+                # Fallback si Gemini non disponible
+                return self._generate_fallback_content(job_data)
 
-            system_prompt = """Tu es un expert en marketing de recrutement et création de contenu publicitaire.
-Génère du contenu attractif et accrocheur pour une affiche d'emploi (poster de recrutement).
-
-Le contenu doit être:
-- Accrocheur et percutant
-- Court et lisible (adapté à une affiche visuelle)
-- Professionnel mais moderne
-- Attirant pour les candidats qualifiés
-
-Retourne UNIQUEMENT un JSON valide avec cette structure:
-{
-    "headline": "Titre court et accrocheur (max 60 caractères)",
-    "tagline": "Slogan percutant (max 80 caractères)",
-    "description": "Description courte et attrayante (max 200 caractères)",
-    "keywords": ["mot-clé1", "mot-clé2", "mot-clé3"],
-    "call_to_action": "Phrase d'appel à l'action (max 40 caractères)",
-    "emoji_suggestions": ["😎", "🚀", "💼"]
-}"""
-
-            user_prompt = f"""Crée une affiche d'emploi pour:
-
-Poste: {job_data.get('title')}
-Entreprise: {job_data.get('company_name')}
-Lieu: {job_data.get('location')}
-Type de contrat: {job_data.get('contract_type')}
-Compétences: {', '.join(job_data.get('required_skills', [])[:5])}
-Avantages: {', '.join(job_data.get('benefits', [])[:3])}
-
-Description du poste:
-{job_data.get('description', '')[:500]}"""
-
-            current_app.logger.info(f"🎨 Génération de contenu pour affiche: {job_data.get('title')}")
-
-            response = client.chat.completions.create(
-                model=model,
-                messages=[
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": user_prompt}
-                ],
-                temperature=0.8,  # Plus créatif
-                max_tokens=800
-            )
-
-            result_text = response.choices[0].message.content.strip()
-
-            # Parser le JSON
-            result = json.loads(result_text)
-
-            current_app.logger.info(f"✅ Contenu généré: {result.get('headline')}")
-            return result
-
-        except json.JSONDecodeError as e:
-            current_app.logger.error(f"Erreur parsing JSON: {str(e)}")
-            # Fallback avec contenu par défaut
-            return self._generate_fallback_content(job_data)
         except Exception as e:
-            current_app.logger.error(f"Erreur génération contenu: {str(e)}")
+            current_app.logger.error(f"Erreur génération contenu affiche: {str(e)}")
             return self._generate_fallback_content(job_data)
 
     def _generate_fallback_content(self, job_data):
@@ -169,7 +97,10 @@ Description du poste:
                 font_headline = ImageFont.truetype("arial.ttf", 60)
                 font_tagline = ImageFont.truetype("arial.ttf", 40)
                 font_text = ImageFont.truetype("arial.ttf", 35)
-            except:
+            except (OSError, IOError) as e:
+                # Font file not found, use default system font
+                from flask import current_app
+                current_app.logger.debug(f"Arial font not found, using default font: {e}")
                 font_title = ImageFont.load_default()
                 font_headline = ImageFont.load_default()
                 font_tagline = ImageFont.load_default()
