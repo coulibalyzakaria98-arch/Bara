@@ -1,7 +1,8 @@
 import axios from 'axios';
 
-// Appel direct au backend pour debug (contourne le proxy Vite)
-const API_BASE_URL = 'http://localhost:5000/api';
+// Use environment variable for API base URL (set in deployment platforms)
+// Fallback to localhost for development
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
 
 // Create axios instance
 const api = axios.create({
