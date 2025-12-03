@@ -179,7 +179,7 @@ python -c "import secrets; print(secrets.token_urlsafe(32))"
 
 Dans Railway Project Settings:
 - **Build Command**: (laisser vide, Nixpacks auto-détecte)
-- **Start Command**: `gunicorn -w 4 -b 0.0.0.0:$PORT run:app`
+- **Start Command**: `gunicorn -w 4 -b 0.0.0.0:$PORT main:app`
 - **Root Directory**: `backend/` (si monorepo)
 
 #### 6. Déployer
