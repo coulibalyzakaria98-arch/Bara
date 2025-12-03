@@ -4,17 +4,16 @@
 BaraCorrespondance AI - Point d'entrée de l'application
 ================================================================
 Usage:
-    python run.py
+    python main.py
     
 Pour production:
-    gunicorn -w 4 -b 0.0.0.0:5000 run:app
+    gunicorn -w 4 -b 0.0.0.0:5000 main:app
 ================================================================
 """
 
 from app import create_app, db
 
 app = create_app()
-
 
 @app.cli.command("init-db")
 def init_db():
