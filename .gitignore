@@ -1,0 +1,66 @@
+# ================================================================
+# .gitignore - BaraCorrespondance AI (Racine)
+# ================================================================
+
+# Environnement
+.env
+.env.local
+.env.*.local
+
+# Environnements virtuels
+.venv/
+venv/
+env/
+ENV/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Fichiers Windows corrompus
+NUL
+nul
+CON
+con
+PRN
+prn
+AUX
+aux
+COM[1-9]
+com[1-9]
+LPT[1-9]
+lpt[1-9]
+
+# Logs
+*.log
+logs/
+
+# Temporaires
+*.tmp
+*.temp
+*.bak
+
+# Base de données locale
+*.db
+*.sqlite3
+
+# Cache
+.cache/
+__pycache__/
+*.pyc
+*.pyo
+
+# Node modules
+node_modules/
+
+# Build artifacts
+dist/
+build/
+*.egg-info/

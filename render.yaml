@@ -1,0 +1,98 @@
+# Render Blueprint pour BaraCorrespondance AI
+# Documentation: https://render.com/docs/blueprint-spec
+
+services:
+  # Backend API (Flask + Gunicorn)
+  - type: web
+    name: bara-backend
+    runtime: python
+    plan: free  # Options: free, starter, standard, pro
+    region: frankfurt  # Options: oregon, frankfurt, singapore
+    buildCommand: pip install -r backend/requirements.txt
+    startCommand: cd backend && gunicorn -w 4 -b 0.0.0.0:$PORT main:app --timeout 120
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.11
+      - key: FLASK_ENV
+        value: production
+      - key: SECRET_KEY
+        generateValue: true  # Génère automatiquement une clé sécurisée
+      - key: JWT_SECRET_KEY
+        generateValue: true  # Génère automatiquement une clé JWT
+      - key: DATABASE_URL
+        fromDatabase:
+          name: bara-postgres
+          property: connectionString
+      - key: GEMINI_API_KEY
+        sync: false  # À configurer manuellement dans le dashboard
+      - key: MAIL_SERVER
+        value: smtp.gmail.com
+      - key: MAIL_PORT
+        value: 587
+      - key: MAIL_USERNAME
+        sync: false  # À configurer manuellement
+      - key: MAIL_PASSWORD
+        sync: false  # À configurer manuellement
+      - key: MAIL_DEFAULT_SENDER
+        value: noreply@baracorrespondance.com
+      - key: DAILY_API_KEY
+        sync: false  # À configurer manuellement si vidéo activée
+      - key: CORS_ORIGINS
+        value: https://bara-frontend.onrender.com  # À mettre à jour avec votre URL frontend
+      - key: UPLOAD_FOLDER
+        value: /opt/render/project/src/backend/app/static/uploads
+      - key: MAX_CONTENT_LENGTH
+        value: 10485760
+    # Disques persistants pour les uploads
+    disk:
+      name: bara-uploads
+      mountPath: /opt/render/project/src/backend/app/static/uploads
+      sizeGB: 1
+    # Commandes de déploiement
+    buildCommand: |
+      cd backend
+      pip install --upgrade pip
+      pip install -r requirements.txt
+    # Auto-déploiement
+    autoDeploy: true
+    branch: main
+    # Health check
+    healthCheckPath: /api/health
+
+  # Frontend React (Static Site)
+  - type: web
+    name: bara-frontend
+    runtime: static
+    plan: free
+    region: frankfurt
+    buildCommand: cd frontend && npm install && npm run build
+    staticPublishPath: frontend/dist
+    envVars:
+      - key: VITE_API_BASE_URL
+        value: https://bara-backend.onrender.com/api  # Mettre à jour avec l'URL backend réelle
+      - key: NODE_VERSION
+        value: 18.18.0
+    # Routes configuration pour React Router
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    autoDeploy: true
+    branch: main
+
+# Base de données PostgreSQL
+databases:
+  - name: bara-postgres
+    plan: free  # Options: free, starter, standard, pro
+    region: frankfurt
+    databaseName: baracorrespondance
+    user: bara_user
+    # Render génère automatiquement le mot de passe
+    # La variable DATABASE_URL est injectée automatiquement dans le backend
+
+# Notes de déploiement:
+# 1. Le plan FREE de Render suspend les services après 15 min d'inactivité (cold start ~30s)
+# 2. Le plan FREE PostgreSQL a une limite de 90 jours de rétention
+# 3. Pour production, considérez le plan Starter ($7/mois backend + $7/mois DB)
+# 4. Les variables avec `sync: false` doivent être configurées manuellement dans le dashboard
+# 5. Après le premier déploiement, migrez la BDD: `flask db upgrade` via le shell Render
